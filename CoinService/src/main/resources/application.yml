@@ -1,0 +1,65 @@
+server:
+  port: 8883                                        # ????????
+
+spring:
+  application:
+    name: coin-service # ????
+
+  datasource:
+    url:
+    username: ${postgresql.username}
+    password: ${postgresql.password}
+    driver-class-name: org.postgresql.Driver
+
+  # ????
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: ${email.username}
+    password: ${email.password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password: # ?????
+    database: 0
+    # ???
+    lettuce:
+      pool:
+        max-active: 20
+        max-idle: 10
+        min-idle: 5
+        max-wait: 100ms
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848   # Nacos ??????
+        namespace: public                # ????ID????????????
+        username: nacos             # ???????? nacos
+        password: nacos           # ???????? nacos
+        group: DEFAULT_GROUP
+      config:
+        server-addr: 127.0.0.1:8848   # Nacos ??????
+        namespace: public
+        group: DEFAULT_GROUP
+        file-extension: yaml          # ??????
+        refresh-enabled: true         # ??????
+
+  config:
+    import: optional:nacos:application-${spring.application.name}.yaml
+
+  profiles:
+    include: secret
+
+jwt:
+  secret: "12345678901234567890123456789012"
+  expiration: 3600000
+  token-header: "Authorization"
+  token-prefix: "Bearer "
