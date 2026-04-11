@@ -27,7 +27,7 @@
 		<module>Utils</module>
 		<module>Config</module>
 		<module>PostingService</module>
-		<module>UserService</module>
+		<module>AuthService</module>
 	</modules>
 	<scm>
 		<connection/>
@@ -42,19 +42,7 @@
 		<spring-cloud-alibaba.version>2025.1.0.0</spring-cloud-alibaba.version>
 	</properties>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
-		</dependency>
 
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<scope>annotationProcessor</scope>
-		</dependency>
-
-	</dependencies>
 
 	<dependencyManagement>
 		<dependencies>
