@@ -28,6 +28,7 @@
 		<module>Config</module>
 		<module>PostingService</module>
 		<module>AuthService</module>
+        <module>CoinService</module>
 	</modules>
 	<scm>
 		<connection/>
