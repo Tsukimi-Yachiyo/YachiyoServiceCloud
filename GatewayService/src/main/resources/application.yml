@@ -94,5 +94,4 @@ security:
     - /api/v1/auth/refresh-token
     - /api/v1/auth/login-by-email
     - /api/v1/auth/change-password
-    - /api/v1/coin/get
 
