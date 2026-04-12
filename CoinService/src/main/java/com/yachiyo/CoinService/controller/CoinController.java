@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Validated
 public class CoinController {
-    private final CoinService coinChangeService;
+    private final CoinService coinService;
 
     /**
      * 金币交易
@@ -22,7 +22,7 @@ public class CoinController {
      */
     @PostMapping("/change")
     public Result<Boolean> changeCoin(@RequestBody @Valid CoinChangeRequest coinChangeRequest) {
-        return coinChangeService.changeCoin(coinChangeRequest);
+        return coinService.changeCoin(coinChangeRequest);
     }
 
     /**
@@ -31,6 +31,6 @@ public class CoinController {
      */
     @PostMapping("/get")
     public Result<Integer> getCoin() {
-        return coinChangeService.getCoin();
+        return coinService.getCoin();
     }
 }
