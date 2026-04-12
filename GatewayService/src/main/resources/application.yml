@@ -19,6 +19,9 @@ spring:
         max-wait: 100ms
 
   cloud:
+    loadbalancer:
+      nacos:
+        enabled: true
     nacos:
       discovery:
         server-addr: 127.0.0.1:8848 # Nacos 服务地址
@@ -26,6 +29,8 @@ spring:
         password: nacos           # 必须正确！默认是 nacos
         namespace: public
         group: DEFAULT_GROUP # Nacos 分组
+        heart-beat-interval: 500
+        heart-beat-timeout: 15000
     gateway:
       server:
         webflux:
@@ -55,6 +60,13 @@ spring:
               args:
                 retries: 2
                 statuses: SERVICE_UNAVAILABLE
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web: DEBUG
+    com.yachiyo.Gateway.filter: DEBUG
+
 sentinel:
   spring:
     cloud:
@@ -67,6 +79,10 @@ management:
       exposure:
         include: health,gateway            # 暴露 gateway 端点可查看路由信息
   endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
     gateway:
       enabled: true # 是否开启 gateway 端点
 
@@ -75,6 +91,7 @@ jwt:
   expiration: 3600000
   token-header: "Authorization"
   token-prefix: "Bearer "
+
 
 security:
   open-api:
@@ -86,4 +103,5 @@ security:
     - /api/v1/auth/refresh-token
     - /api/v1/auth/login-by-email
     - /api/v1/auth/change-password
+    - /actuator/health/**
 
