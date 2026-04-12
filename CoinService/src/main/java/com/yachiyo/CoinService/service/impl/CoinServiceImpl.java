@@ -4,10 +4,9 @@ import com.yachiyo.CoinService.dto.CoinChangeRequest;
 import com.yachiyo.CoinService.result.Result;
 import com.yachiyo.CoinService.service.CoinService;
 import com.yachiyo.CoinService.utils.CoinUtils;
+import com.yachiyo.CoinService.utils.CurrentUserIdProvider;
 import com.yachiyo.CoinService.utils.TradeType;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,12 +14,15 @@ public class CoinServiceImpl implements CoinService {
     @Autowired
     private CoinUtils coinUtils;
 
+    @Autowired
+    private CurrentUserIdProvider currentUserIdProvider;
+
     @Override
     public Result<Boolean> changeCoin(CoinChangeRequest request) {
         try {
             String businessType = request.getType().name();
             Double amount = request.getAmount();
-            Long userId = getCurrentUserId();
+            Long userId = currentUserIdProvider.getCurrentUserId();
             // 双向交易需要额外处理付款方
             if (request.getType() == TradeType.TIP) {
                 // 当前用户必须是付款方，并且不能给自己打赏
@@ -44,18 +46,9 @@ public class CoinServiceImpl implements CoinService {
     @Override
     public Result<Integer> getCoin() {
         try {
-            return Result.success(coinUtils.getCoin(getCurrentUserId()));
+            return Result.success(coinUtils.getCoin(currentUserIdProvider.getCurrentUserId()));
         } catch (Exception e) {
             return Result.error("401", "获取余额失败", e.getMessage());
-        }
-    }
-
-    private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() != null) {
-            return (Long.valueOf((String) authentication.getPrincipal()));
-        } else {
-            throw new IllegalStateException("未获取到登录用户信息");
         }
     }
 }
