@@ -48,6 +48,9 @@ public class GatewayHeaderAuthenticationFilter extends OncePerRequestFilter {
 
 
             SecurityContextHolder.getContext().setAuthentication(auth);
+        } else{
+            // 返回 403
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         }
 
         filterChain.doFilter(request, response);

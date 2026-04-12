@@ -28,7 +28,8 @@
 		<module>Config</module>
 		<module>PostingService</module>
 		<module>AuthService</module>
-        <module>CoinService</module>
+		<module>CoinService</module>
+		<module>UserService</module>
 	</modules>
 	<scm>
 		<connection/>
