@@ -29,7 +29,7 @@ public class CoinController {
      * 获取金币
      * @return 金币
      */
-    @GetMapping("/get")
+    @PostMapping("/get")
     public Result<Integer> getCoin() {
         return coinChangeService.getCoin();
     }
