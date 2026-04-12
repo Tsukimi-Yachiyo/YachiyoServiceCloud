@@ -25,6 +25,11 @@
             <!-- 版本由 spring-cloud-dependencies 的 BOM 管理，此处无需指定 -->
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+
         <!-- 3. Spring Boot Actuator (用于健康检查，可选) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

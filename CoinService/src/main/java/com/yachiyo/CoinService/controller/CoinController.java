@@ -6,16 +6,13 @@ import com.yachiyo.CoinService.service.CoinService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/coin-change")
+@RequestMapping("/api/v1/coin")
 @RequiredArgsConstructor
 @Validated
-public class CoinChangeController {
+public class CoinController {
     private final CoinService coinChangeService;
 
     /**
@@ -32,7 +29,7 @@ public class CoinChangeController {
      * 获取金币
      * @return 金币
      */
-    @PostMapping("/get")
+    @GetMapping("/get")
     public Result<Integer> getCoin() {
         return coinChangeService.getCoin();
     }

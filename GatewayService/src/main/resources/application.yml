@@ -8,7 +8,7 @@ spring:
   redis:
     host: 127.0.0.1
     port: 6379
-    password: # 没有就删掉
+    password: 123456 # 没有就删掉
     database: 0
     # 连接池
     lettuce:
@@ -23,7 +23,7 @@ spring:
       discovery:
         server-addr: 127.0.0.1:8848 # Nacos 服务地址
         username: nacos             # 必须正确！默认是 nacos
-        password: ew4mqMBIl3iq           # 必须正确！默认是 nacos
+        password: nacos           # 必须正确！默认是 nacos
         namespace: public
         group: DEFAULT_GROUP # Nacos 分组
     gateway:
@@ -94,4 +94,5 @@ security:
     - /api/v1/auth/refresh-token
     - /api/v1/auth/login-by-email
     - /api/v1/auth/change-password
+    - /api/v1/coin/get
 
