@@ -13,6 +13,5 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 public class CoinServiceApplication {
     void main(String[] args) {
         SpringApplication.run(CoinServiceApplication.class, args);
-        IO.println("Hello World!");
     }
 }

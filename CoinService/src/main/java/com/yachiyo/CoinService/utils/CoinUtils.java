@@ -43,6 +43,7 @@ public class CoinUtils {
         }
 
         // 更新用户余额
+        Double beforeBalance = userWallet.getBalance();
         userWallet.setBalance(userWallet.getBalance() + amount);
 
         // 保存用户信息
@@ -54,8 +55,8 @@ public class CoinUtils {
         // 记录交易日志
         coinLogMapper.insert(new CoinLog(
                 null, toUserId, amount,
+                beforeBalance,
                 userWallet.getBalance(),
-                userWallet.getBalance() + amount,
                 businessType, LocalDate.now()
         ));
     }

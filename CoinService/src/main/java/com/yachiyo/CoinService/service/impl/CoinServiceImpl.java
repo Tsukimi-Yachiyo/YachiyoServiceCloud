@@ -2,7 +2,6 @@ package com.yachiyo.CoinService.service.impl;
 
 import com.yachiyo.CoinService.dto.CoinChangeRequest;
 import com.yachiyo.CoinService.result.Result;
-import com.yachiyo.CoinService.security.GatewayAuthUser;
 import com.yachiyo.CoinService.service.CoinService;
 import com.yachiyo.CoinService.utils.CoinUtils;
 import com.yachiyo.CoinService.utils.TradeType;
@@ -21,7 +20,8 @@ public class CoinServiceImpl implements CoinService {
         try {
             String businessType = request.getType().name();
             Double amount = request.getAmount();
-            Long userId = currentUserId();
+            Long userId = getCurrentUserId();
+            // 双向交易需要额外处理付款方
             if (request.getType() == TradeType.TIP) {
                 // 当前用户必须是付款方，并且不能给自己打赏
                 if (userId.equals(request.getFromUserId()) && !userId.equals(request.getToUserId())) {
@@ -44,18 +44,18 @@ public class CoinServiceImpl implements CoinService {
     @Override
     public Result<Integer> getCoin() {
         try {
-            Long userId = currentUserId();
-            return Result.success(coinUtils.getCoin(userId));
+            return Result.success(coinUtils.getCoin(getCurrentUserId()));
         } catch (Exception e) {
-            return Result.error("401", "获取余额失败:" + currentUserId(), e.getMessage());
+            return Result.error("401", "获取余额失败", e.getMessage());
         }
     }
 
-    private Long currentUserId() {
+    private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof GatewayAuthUser user)) {
+        if (authentication != null && authentication.getPrincipal() != null) {
+            return (Long.valueOf((String) authentication.getPrincipal()));
+        } else {
             throw new IllegalStateException("未获取到登录用户信息");
         }
-        return user.getId();
     }
 }
