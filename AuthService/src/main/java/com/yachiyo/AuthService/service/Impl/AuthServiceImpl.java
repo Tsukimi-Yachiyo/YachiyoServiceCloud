@@ -116,6 +116,12 @@ public class AuthServiceImpl implements AuthService {
             if (verifyCode(registerRequest.getEmail(), registerRequest.getCode())) {
                 return Result.error("400.1","验证码错误",null);
             }
+            if (userMapper.selectCount(new LambdaQueryWrapper<User>().eq(User::getName, registerRequest.getUsername())) == 0) {
+                return Result.error("400.2","用户名不存在",null);
+            }
+            if (!userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getName, registerRequest.getUsername()).eq(User::getEmail, registerRequest.getEmail())).getEmail().equals(registerRequest.getEmail())) {
+                return Result.error("400.3","用户邮箱不一致",null);
+            }
             User user = new User();
             user.setName(registerRequest.getUsername());
             user.setPassword(securitySafeToolConfig.md5(registerRequest.getPassword()));
@@ -169,7 +175,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private String userEntrySystem(User user) throws IOException {
-        Long userId = user.getId();        //检查用户文件夹是否存在
+        Long userId = user.getId();
         String token = jwtUtils.generateToken(userId, user.getName(), securitySafeToolConfig.getUnique(userId));
         if (!userDetailClient.login(userId).getData()) {
             throw new IOException("登录失败");

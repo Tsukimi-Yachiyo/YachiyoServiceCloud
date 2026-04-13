@@ -1,5 +1,6 @@
 package com.yachiyo.UserService.service.Impl;
 
+import com.yachiyo.UserService.config.FastMethodConfig;
 import com.yachiyo.UserService.entity.UserDetail;
 import com.yachiyo.UserService.repository.UserDetailRepository;
 import com.yachiyo.UserService.result.Result;
@@ -14,6 +15,9 @@ public class UserDetailUpdateServiceImpl implements UserDetailUpdateService {
     @Autowired
     private UserDetailRepository userDetailRepository;
 
+    @Autowired
+    private FastMethodConfig fastMethodConfig;
+
     /**
      * 内部同步调用 → 仍然返回 Result<Boolean>
      */
@@ -27,12 +31,17 @@ public class UserDetailUpdateServiceImpl implements UserDetailUpdateService {
             userDetailRepository.save(userDetail).block();
             return Result.success(true);
         } catch (Exception e) {
-            return Result.error("500", "初始化用户详情失败");
+            return Result.error("500", e.getMessage(), "初始化用户详情失败");
         }
     }
 
     @Override
     public Result<Boolean> login(Long id) {
-        
+        try {
+            fastMethodConfig.getBirthday(id);
+            return Result.success(true);
+        } catch (Exception e) {
+            return Result.error("500",null, e.getMessage());
+        }
     }
 }
