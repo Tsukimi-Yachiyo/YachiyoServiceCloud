@@ -5,7 +5,6 @@ import com.yachiyo.UserService.entity.UserDetail;
 import com.yachiyo.UserService.repository.UserDetailRepository;
 import com.yachiyo.UserService.result.Result;
 import com.yachiyo.UserService.service.UserDetailUpdateService;
-import com.yachiyo.UserService.utils.AsyncFileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +26,6 @@ public class UserDetailUpdateServiceImpl implements UserDetailUpdateService {
             // 阻塞取结果（内部同步调用允许）
             UserDetail userDetail = new UserDetail();
             userDetail.setUserId(id);
-            AsyncFileUtil.createDirectory(id.toString()).block();
             userDetailRepository.save(userDetail).block();
             return Result.success(true);
         } catch (Exception e) {
@@ -38,8 +36,7 @@ public class UserDetailUpdateServiceImpl implements UserDetailUpdateService {
     @Override
     public Result<Boolean> login(Long id) {
         try {
-            fastMethodConfig.getBirthday(id);
-            return Result.success(true);
+            return Result.success(fastMethodConfig.getBirthday(id));
         } catch (Exception e) {
             return Result.error("500",null, e.getMessage());
         }
