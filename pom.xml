@@ -23,13 +23,11 @@
 	</developers>
 	<modules>
 		<module>GatewayService</module>
-		<module>Common</module>
-		<module>Utils</module>
-		<module>Config</module>
 		<module>PostingService</module>
 		<module>AuthService</module>
 		<module>CoinService</module>
 		<module>UserService</module>
+		<module>FileService</module>
 	</modules>
 	<scm>
 		<connection/>
