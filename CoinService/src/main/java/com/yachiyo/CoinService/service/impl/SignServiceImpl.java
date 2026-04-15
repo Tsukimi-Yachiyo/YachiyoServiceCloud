@@ -9,6 +9,7 @@ import com.yachiyo.CoinService.service.CoinService;
 import com.yachiyo.CoinService.service.SignService;
 import com.yachiyo.CoinService.utils.CurrentUserIdProvider;
 import com.yachiyo.CoinService.utils.TradeType;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -36,9 +37,14 @@ public class SignServiceImpl implements SignService {
 //            return Result.error("404", "用户不存在"+userId);
 //        }
 
-        if (getSignCountForToday(userId) > 0) {
-            return Result.error("400", "今日已签到");
+        Long signCount = getSignCountForToday(userId);
+        if (signCount == null) {
+            return Result.error("500", "查询签到状态失败", null);
         }
+        if (signCount > 0) {
+            return Result.error("400", "今日已签到", null);
+        }
+
         // 签到成功
         CoinChangeRequest coinChangeRequest = new CoinChangeRequest();
         coinChangeRequest.setToUserId(userId);
@@ -49,14 +55,25 @@ public class SignServiceImpl implements SignService {
 
     @Override
     public Result<Boolean> getSignInStatus() {
-        return Result.success(getSignCountForToday(currentUserIdProvider.getCurrentUserId()) > 0);
+        Long signCount = getSignCountForToday(currentUserIdProvider.getCurrentUserId());
+
+        if (signCount == null) {
+            return Result.error("500", "查询签到状态失败", null);
+        }
+
+        return Result.success(signCount > 0);
     }
 
+    @Nullable
     private Long getSignCountForToday(Long userId) {
-        QueryWrapper<CoinLog> qw = new QueryWrapper<>();
-        qw.eq("user_id", userId)
-                .eq("business_type", TradeType.CHECKIN.name())
-                .eq("create_time", LocalDate.now());
-        return coinLogMapper.selectCount(qw);
+        try {
+            QueryWrapper<CoinLog> qw = new QueryWrapper<>();
+            qw.eq("user_id", userId)
+                    .eq("business_type", TradeType.CHECKIN.name())
+                    .eq("create_time", LocalDate.now());
+            return coinLogMapper.selectCount(qw);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
