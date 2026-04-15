@@ -3,8 +3,7 @@ package com.yachiyo.PostingService.service.Impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.yachiyo.PostingService.Utils.FileUrlUtil;
-import com.yachiyo.PostingService.Utils.IOFileUtils;
+import com.yachiyo.PostingService.client.FileClient;
 import com.yachiyo.PostingService.dto.*;
 import com.yachiyo.PostingService.entity.*;
 import com.yachiyo.PostingService.enumeration.InteractionAction;
@@ -15,6 +14,10 @@ import com.yachiyo.PostingService.service.PostingService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,38 +37,40 @@ public class PostingServiceImpl implements PostingService {
     private final LinkLikeMapper linkLikeMapper;
     private final LinkCollectionMapper linkCollectionMapper;
     private final LinkCoinMapper linkCoinMapper;
+    private final FileClient fileClient;
+    private final CacheManager cacheManager;
 
-    @Override
+    private static final String POSTING_SEARCH_CACHE_NAME = "public:posting:search";
+    private static final String POSTING_DETAIL_CACHE_NAME = "public:posting:detail";
+    private static final String POSTING_ENCAPSULATE_CACHE_NAME = "public:posting:encapsulate";
+
+    @Override @Cacheable(value = POSTING_SEARCH_CACHE_NAME, key = "#keyword")
     public Result<List<Long>> searchPosting(String keyword, Integer pageNum, Integer pageSize) {
-        try {
-            Page<Posting> page = new Page<>(pageNum, pageSize);
+        Page<Posting> page = new Page<>(pageNum, pageSize);
 
-            LambdaQueryWrapper<Posting> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.select(Posting::getId)
-                    .eq(Posting::getIsApproved, true)
-                    .and(wrapper -> wrapper
-                            .like(Posting::getTitle, "%" + keyword + "%")
-                            .or()
-                            .like(Posting::getContent, "%" + keyword + "%")
-                    )
-                    .orderByDesc(Posting::getScore);
+        LambdaQueryWrapper<Posting> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.select(Posting::getId)
+                .eq(Posting::getIsApproved, true)
+                .and(wrapper -> wrapper
+                        .like(Posting::getTitle, "%" + keyword + "%")
+                        .or()
+                        .like(Posting::getContent, "%" + keyword + "%")
+                )
+                .orderByDesc(Posting::getScore);
 
-            postingMapper.selectPage(page, queryWrapper);
+        postingMapper.selectPage(page, queryWrapper);
 
-            List<Long> postingIds = page.getRecords()
-                    .stream()
-                    .map(Posting::getId)
-                    .collect(Collectors.toList());
-            return Result.success(postingIds);
-        } catch (Exception e) {
-            return Result.error("500","搜索帖子失败：",e.getMessage());
-        }
+        List<Long> postingIds = page.getRecords()
+                .stream()
+                .map(Posting::getId)
+                .collect(Collectors.toList());
+        return Result.success(postingIds);
     }
 
     @Override
     public Result<List<Long>> getLikePosting() {
         try {
-            Long UserId = ((User) Objects.requireNonNull(Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal())).getId();
+            Long UserId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
             return Result.success(linkLikeMapper.selectList(new LambdaQueryWrapper<LinkLike>().eq(LinkLike::getUserId, UserId)).stream().map(LinkLike::getPostingId).toList());
         } catch (Exception e) {
             return Result.error("500","获取点赞帖子失败：",e.getMessage());
@@ -75,7 +80,7 @@ public class PostingServiceImpl implements PostingService {
     @Override
     public Result<List<Long>> getCollectionPosting() {
         try {
-            Long UserId = ((User) Objects.requireNonNull(Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal())).getId();
+            Long UserId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
             return Result.success(linkCollectionMapper.selectList(new LambdaQueryWrapper<LinkCollection>().eq(LinkCollection::getUserId, UserId)).stream().map(LinkCollection::getPostingId).toList());
         } catch (Exception e) {
             return Result.error("500","获取收藏帖子失败：",e.getMessage());
@@ -85,17 +90,15 @@ public class PostingServiceImpl implements PostingService {
     @Override
     public Result<Boolean> uploadPosting(UploadPostingRequest posting) {
         try {
-            Long UserId = ((User) Objects.requireNonNull(Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal())).getId();
-            if (ioFileUtils.checkDirExist(UserId + "/" + posting.getTitle())) {
-                ioFileUtils.createDir(UserId + "/" + posting.getTitle());
-            }
-            if (posting.getCoverImage() != null && !ioFileUtils.uploadFile(UserId + "/" + posting.getTitle() + "/" + "cover.jpg", posting.getCoverImage())) {
+            Long UserId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
+
+            if (posting.getCoverImage() != null && !fileClient.upload(UserId + "/" + posting.getTitle() + "/" + "cover.jpg", posting.getCoverImage())) {
                 return Result.error("封面图片上传失败");
             }
             if (posting.getFiles() != null && !posting.getFiles().isEmpty()) {
                 for (int i = 0; i < posting.getFiles().size(); i++) {
                     MultipartFile file = posting.getFiles().get(i);
-                    if (!ioFileUtils.uploadFile(UserId + "/" + posting.getTitle() + "/" + i + "_" + file.getOriginalFilename(), file)) {
+                    if (!fileClient.upload(UserId + "/" + posting.getTitle() + "/" + i + "_" + file.getOriginalFilename(), file)) {
                         return Result.error("文件上传失败");
                     }
                 }
@@ -117,7 +120,7 @@ public class PostingServiceImpl implements PostingService {
     }
 
 
-    @Override
+    @Override @Cacheable(value = POSTING_DETAIL_CACHE_NAME, key = "#postingId")
     public Result<GetPostingResponse> getPosting(Long postingId) {
         try {
             Posting postingEntity = postingMapper.selectById(postingId);
@@ -131,9 +134,9 @@ public class PostingServiceImpl implements PostingService {
             getPostingResponse.setContent(postingEntity.getContent());
             Long userId = postingEntity.getUserId();
             List<String> files = new ArrayList<>();
-            for (String fileName : ioFileUtils.getFileNames(userId + "/" + postingEntity.getTitle())) {
+            for (String fileName : fileClient.getNames(userId + "/" + postingEntity.getTitle())) {
                 if (fileName.startsWith("\\d+")) {
-                    files.add(fileUrlUtil.generateFileUrl(userId + "/" + postingEntity.getTitle() + "/" + fileName, 60 * 5));
+                    files.add(fileClient.getUrl(userId + "/" + postingEntity.getTitle() + "/" + fileName, 60 * 5));
                 }
             }
             PostDetail postDetail = postDetailMapper.selectById(postingId);
@@ -146,7 +149,7 @@ public class PostingServiceImpl implements PostingService {
         }
     }
 
-    @Override
+    @Override @Cacheable(value = POSTING_ENCAPSULATE_CACHE_NAME, key = "#postingId")
     public Result<PostEncapsulateResponse> getPostingEncapsulate(Long postingId) {
         try{
             Posting postingEntity = postingMapper.selectById(postingId);
@@ -154,7 +157,7 @@ public class PostingServiceImpl implements PostingService {
                 return Result.error("帖子不存在");
             }
             // 获取当前登录用户
-            Long currentUserId = ((User) Objects.requireNonNull(Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal())).getId();
+            Long currentUserId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
             // 如果不是帖子作者且帖子未审核，则拒绝访问
             if (!postingEntity.getIsApproved() && !postingEntity.getUserId().equals(currentUserId)) {
                 return Result.error("帖子未审核");
@@ -162,33 +165,32 @@ public class PostingServiceImpl implements PostingService {
             PostEncapsulateResponse postEncapsulateResponse = new PostEncapsulateResponse();
             postEncapsulateResponse.setTitle(postingEntity.getTitle());
             postEncapsulateResponse.setPosterId(postingEntity.getUserId());
-            postEncapsulateResponse.setCoverImage(fileUrlUtil.generateFileUrl(postingEntity.getUserId() + "/" + postingEntity.getTitle() + "/" + "cover.jpg", 60 * 5));
+            postEncapsulateResponse.setCoverImage(fileClient.getUrl(postingEntity.getUserId() + "/" + postingEntity.getTitle() + "/" + "cover.jpg", 60 * 5));
             return Result.success(postEncapsulateResponse);
         } catch (Exception e) {
             return Result.error("500","获取帖子简述失败：",e.getMessage());
         }
     }
 
-    @Override
+    @Override @CacheEvict(value = POSTING_SEARCH_CACHE_NAME, allEntries = true)
     public Result<Boolean> deletePosting(Long postingId) {
-        try {
-            Long UserId = ((User) Objects.requireNonNull(Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal())).getId();
-            Posting postingEntity = postingMapper.selectById(postingId);
-            if (postingEntity == null) {
-                return Result.error("帖子不存在");
-            }
-            ioFileUtils.deleteFile(UserId + "/" + postingEntity.getTitle());
-            return Result.success(
-                    postingMapper.deleteById(postingId) > 0);
-        } catch (Exception e) {
-            return Result.error("500","删除帖子失败：",e.getMessage());
+        Long UserId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
+        Posting postingEntity = postingMapper.selectById(postingId);
+        if (postingEntity == null) {
+            return Result.error("帖子不存在");
+        }
+        fileClient.delete(UserId + "/" + postingEntity.getTitle());
+        if (postingMapper.deleteById(postingId) > 0) {
+            return Result.success(true);
+        } else {
+            return Result.error("400","删除帖子失败");
         }
     }
 
     @Override
     public Result<Boolean> handleInteraction(InteractionRequest request) {
         try {
-            Long userId = ((User) Objects.requireNonNull(Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal())).getId();
+            Long userId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
             Long postingId = request.getPostingId();
             InteractionType type = request.getType();
             InteractionAction action = request.getAction();
@@ -273,7 +275,7 @@ public class PostingServiceImpl implements PostingService {
         try {
             Long userId = null;
             try {
-                userId = ((User) Objects.requireNonNull(Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal())).getId();
+                userId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
             } catch (Exception e) {
                 // 用户未登录，userId保持为null
             }
@@ -313,12 +315,12 @@ public class PostingServiceImpl implements PostingService {
     @Override
     public Result<List<SelfPostResponse>> getMyPosting() {
         try {
-            Long UserId = ((User) Objects.requireNonNull(Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal())).getId();
+            Long UserId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
             List<Long> postingIds = postingMapper.selectList(new QueryWrapper<Posting>().eq("user_id", UserId).orderByDesc("id"))
                     .stream()
                     .map(Posting::getId)
                     .toList();
-            List<com.yachiyo.dto.SelfPostResponse> selfPostResponses = new ArrayList<>();
+            List<SelfPostResponse> selfPostResponses = new ArrayList<>();
             for (Long postingId : postingIds) {
                 SelfPostResponse selfPostResponse = new SelfPostResponse();
                 selfPostResponse.setPostingId(postingId);

@@ -28,7 +28,8 @@
 		<module>CoinService</module>
 		<module>UserService</module>
 		<module>FileService</module>
-	</modules>
+        <module>ToolService</module>
+    </modules>
 	<scm>
 		<connection/>
 		<developerConnection/>

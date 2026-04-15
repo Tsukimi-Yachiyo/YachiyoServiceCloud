@@ -7,6 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.List;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -56,4 +59,9 @@ public class FileInternalController {
         return ioFileUtils.fileExist(fileName);
     }
 
+    @GetMapping("/getNames")
+    public List<String> getNames(
+            @RequestParam("dirName")  String dirName) throws IOException {
+        return ioFileUtils.getFileNames(dirName);
+    }
 }
