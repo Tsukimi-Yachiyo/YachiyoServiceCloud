@@ -11,7 +11,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @EnableDiscoveryClient   // 开启服务注册发现（新版本可省略，但建议显式声明）
 @MapperScan("com.yachiyo.CoinService.mapper")
 public class CoinServiceApplication {
-    void main(String[] args) {
+    public static void main(String[] args) {
         SpringApplication.run(CoinServiceApplication.class, args);
     }
 }
