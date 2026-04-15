@@ -10,7 +10,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @EnableDiscoveryClient
 @MapperScan("com.yachiyo.CoinService.mapper")
 public class CoinServiceApplication {
-    void main(String[] args) {
+    public static void main(String[] args) {
         SpringApplication.run(CoinServiceApplication.class, args);
     }
 }
