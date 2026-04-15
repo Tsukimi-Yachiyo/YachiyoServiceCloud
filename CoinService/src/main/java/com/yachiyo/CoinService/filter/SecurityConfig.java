@@ -23,7 +23,8 @@ public class SecurityConfig {
         http
                 .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/coin-change/**").permitAll()
+                        .requestMatchers("/api/v1/coin/**").permitAll()
+                        .requestMatchers("/api/v1/sign/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
