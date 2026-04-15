@@ -1,5 +1,4 @@
-package com.yachiyo.UserService;
-
+package com.yachiyo.ToolService;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -7,11 +6,11 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
-@EnableFeignClients(basePackages = "com.yachiyo.UserService.client")
+@EnableFeignClients(basePackages = "com.yachiyo.ToolService.client")
 @EnableDiscoveryClient
-public class UserServiceApplication {
-    public static void main(String[] args) {
+public class ToolServiceApplication {
 
-        SpringApplication.run(UserServiceApplication.class, args);
+    public static void main(String[] args) {
+        SpringApplication.run(ToolServiceApplication.class, args);
     }
 }

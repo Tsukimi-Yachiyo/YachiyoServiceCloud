@@ -9,7 +9,7 @@ WORKDIR /app
 COPY target/*.jar app.jar
 
 # 暴露端口 8882
-EXPOSE 8882
+EXPOSE 8972
 
 # 启动命令
 ENTRYPOINT ["java", "-jar", "app.jar"]

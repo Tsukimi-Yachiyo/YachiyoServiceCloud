@@ -53,9 +53,15 @@ spring:
         group: DEFAULT_GROUP
         file-extension: yaml          # 配置文件格式
         refresh-enabled: true         # 启用动态刷新
+    loadbalancer:
+      nacos:
+        enabled: true
+      cache:
+        ttl: 10s
+        enabled: true
 
   config:
-    import: nacos:application-${spring.application.name}.yaml
+    import: nacos:${spring.application.name}
 
   profiles:
     include: secret

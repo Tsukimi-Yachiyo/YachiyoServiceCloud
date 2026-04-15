@@ -98,4 +98,5 @@ security:
     - /api/v1/auth/login-by-email
     - /api/v1/auth/change-password
     - /actuator/health/**
+    - /ap1/v3/**
 

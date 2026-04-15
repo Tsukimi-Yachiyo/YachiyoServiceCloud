@@ -87,7 +87,13 @@ public class AuthServiceImpl implements AuthService {
             user.setEmail(registerRequest.getEmail());
             userMapper.insert(user);
             walletInitClient.initWallet(user.getId());
-            userDetailClient.initUserDetail(user.getId());
+
+            if (!Objects.requireNonNull(userDetailClient.initUserDetail(user.getId())).getData()) {
+                throw new IOException("初始化用户详情失败");
+            }
+            if (!Objects.requireNonNull(userDetailClient.login(user.getId())).getData()) {
+                throw new IOException("登录失败");
+            }
             String token = userEntrySystem(user);
             return Result.success(token, "注册成功",null);
         } catch (Exception e) {
@@ -177,7 +183,7 @@ public class AuthServiceImpl implements AuthService {
     private String userEntrySystem(User user) throws IOException {
         Long userId = user.getId();
         String token = jwtUtils.generateToken(userId, user.getName(), securitySafeToolConfig.getUnique(userId));
-        if (!userDetailClient.login(userId).getData()) {
+        if (!Objects.requireNonNull(userDetailClient.login(userId)).getData()) {
             throw new IOException("登录失败");
         }
         return token;

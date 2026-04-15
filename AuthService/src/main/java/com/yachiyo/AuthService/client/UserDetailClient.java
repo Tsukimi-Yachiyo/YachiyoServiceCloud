@@ -5,7 +5,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "user-service") // 直接写服务名，不走网关
+@FeignClient(name = "user-service")
 public interface UserDetailClient {
 
     @GetMapping("/internal/user/detail/init/{id}")

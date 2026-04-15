@@ -7,8 +7,8 @@ WORKDIR /app
 # 复制 target 下的 jar 包到容器
 COPY target/*.jar app.jar
 
-# 暴露端口 8881
-EXPOSE 8881
+# 暴露端口 8884
+EXPOSE 8884
 
 # 启动命令
 ENTRYPOINT ["java", "-jar", "app.jar"]
