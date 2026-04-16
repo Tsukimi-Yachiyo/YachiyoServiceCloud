@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/sign")
+@RequestMapping("/api/v2/sign")
 public class SignController {
     @Autowired
     private SignService signService;
@@ -17,7 +17,7 @@ public class SignController {
      * 签到
      * @return 签到结果
      */
-    @PostMapping("check-in")
+    @PostMapping("/check-in")
     public Result<Boolean> signIn() {
         return signService.signIn();
     }

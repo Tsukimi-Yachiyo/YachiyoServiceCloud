@@ -53,6 +53,6 @@ public class GatewayHeaderAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String uri = request.getRequestURI();
-        return !pathMatcher.match("/api/v1/auth/logout", uri);
+        return !pathMatcher.match("/internal/**", uri);
     }
 }

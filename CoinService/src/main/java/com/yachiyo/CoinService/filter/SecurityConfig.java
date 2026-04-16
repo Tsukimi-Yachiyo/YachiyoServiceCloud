@@ -23,8 +23,9 @@ public class SecurityConfig {
         http
                 .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/coin/**").permitAll()
-                        .requestMatchers("/api/v1/sign/**").permitAll()
+                        .requestMatchers("/api/v2/coin/**").permitAll()
+                        .requestMatchers("/api/v2/sign/**").permitAll()
+                        .requestMatchers("/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)

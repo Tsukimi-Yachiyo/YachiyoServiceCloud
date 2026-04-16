@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: auth-service # 应用名称
+    name: posting-service # 应用名称
 
   datasource:
     url: jdbc:postgresql://localhost:5432/yachiyo?currentSchema=public&characterEncoding=utf8
