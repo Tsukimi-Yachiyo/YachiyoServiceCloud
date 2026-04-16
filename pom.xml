@@ -29,6 +29,7 @@
 		<module>UserService</module>
 		<module>FileService</module>
         <module>ToolService</module>
+        <module>AdminService</module>
     </modules>
 	<scm>
 		<connection/>
