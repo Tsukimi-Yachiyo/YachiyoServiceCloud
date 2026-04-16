@@ -18,18 +18,6 @@ public class FastMethodConfig {
         return new RestTemplate();
     }
 
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
-
-    public String getHoliday() {
-        // 从redis 中获取当前节假日
-        String holiday = Objects.requireNonNull(redisTemplate.opsForHash().get("public:date", "holiday")).toString();
-        if (!holiday.equals("非节假日")) {
-            return holiday;
-        }
-        return null;
-    }
-
     public String generateCode(int length) {
         int min = (int) Math.pow(10, length - 1);
         int max = (int) Math.pow(10, length) - 1;

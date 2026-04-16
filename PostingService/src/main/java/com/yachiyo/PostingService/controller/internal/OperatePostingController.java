@@ -4,6 +4,7 @@ import com.yachiyo.PostingService.dto.PostingQueryRequest;
 import com.yachiyo.PostingService.dto.ReviewRequest;
 import com.yachiyo.PostingService.entity.Posting;
 import com.yachiyo.PostingService.result.Result;
+import com.yachiyo.PostingService.service.AdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -19,6 +20,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Validated
 public class OperatePostingController {
+
+    private final AdminService adminService;
 
     @PostMapping("/review")
     public Result<Boolean> reviewPosting(@RequestBody @Valid ReviewRequest request) {

@@ -26,39 +26,22 @@ spring:
       discovery:
         server-addr: 127.0.0.1:8848 # Nacos 服务地址
         username: nacos             # 必须正确！默认是 nacos
-        password: nacos           # 必须正确！默认是 nacos
+        password: KaguyaIrohaForever           # 必须正确！默认是 nacos
         namespace: public
         group: DEFAULT_GROUP # Nacos 分组
         heart-beat-interval: 500
         heart-beat-timeout: 15000
+      config:
+        server-addr: 127.0.0.1:8848   # Nacos 配置中心地址
+        username: nacos             # 必须正确！默认是 nacos
+        password: KaguyaIrohaForever           # 必须正确！默认是 nacos
+        namespace: public
+        group: DEFAULT_GROUP
+        file-extension: yaml          # 配置文件格式
+        refresh-enabled: true         # 启用动态刷新
     gateway:
       server:
         webflux:
-          routes:
-            # 用户服务路由
-            - id: user-service-route
-              uri: lb://user-service
-              predicates:
-                - Path=/api/v1/user/**
-              filters:
-                - StripPrefix=0
-
-            # 认证服务路由
-            - id: auth-service-route
-              uri: lb://auth-service
-              predicates:
-                - Path=/api/v1/auth/**
-              filters:
-                - StripPrefix=0
-
-            # 硬币服务路由
-            - id: coin-service-route
-              uri: lb://coin-service
-              predicates:
-                - Path=/api/v1/coin/**
-              filters:
-                - StripPrefix=0
-
           discovery:
             locator:
               enabled: false
@@ -69,6 +52,9 @@ spring:
                 retries: 2
                 statuses: SERVICE_UNAVAILABLE
 
+  config:
+    import:
+      - nacos:${spring.application.name}
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
@@ -112,4 +98,5 @@ security:
     - /api/v1/auth/login-by-email
     - /api/v1/auth/change-password
     - /actuator/health/**
+    - /ap1/v3/**
 

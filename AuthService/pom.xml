@@ -132,6 +132,8 @@
             <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
 
+
+
         <!-- Feign 负载均衡（必须加！）-->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

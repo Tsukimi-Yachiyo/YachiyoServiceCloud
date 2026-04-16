@@ -100,7 +100,7 @@ public class IOFileUtils {
     }
 
     // ===================== 获取目录下所有文件名 =====================
-    public String[] getFileNames(String dirName) throws IOException {
+    public List<String> getFileNames(String dirName) throws IOException {
         String prefix = UPLOAD_PREFIX + dirName + "/";
         List<String> fileNames = new ArrayList<>();
 
@@ -122,10 +122,10 @@ public class IOFileUtils {
                     fileNames.add(name);
                 }
             }
-            return fileNames.toArray(new String[0]);
+            return fileNames;
         } catch (Exception e) {
             log.error("MinIO获取文件列表失败", e);
-            return new String[0];
+            return new ArrayList<>();
         }
     }
 

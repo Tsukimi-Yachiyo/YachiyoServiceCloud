@@ -19,6 +19,11 @@ public class GatewayHeaderAuthenticationWebFilter implements WebFilter {
     @Override @NullMarked
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         HttpHeaders headers = exchange.getRequest().getHeaders();
+        String requestPath = exchange.getRequest().getPath().value();
+
+        if (isWhiteListPath(requestPath)) {
+            return chain.filter(exchange);
+        }
 
         String userId = headers.getFirst("X-User-Id");
 
@@ -29,5 +34,9 @@ public class GatewayHeaderAuthenticationWebFilter implements WebFilter {
         // 将认证信息放入响应式安全上下文
         return chain.filter(exchange)
                 .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth));
+    }
+
+    private boolean isWhiteListPath(String requestPath) {
+        return requestPath.startsWith("/internal/**");
     }
 }
