@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.List;
 
 @FeignClient(name = "file-service", path = "/internal/file")
-public interface FileClient {
+public interface FileClient{
 
     @GetMapping("/getUrl")
     String getUrl(@RequestParam("url") String url,

@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.FIELD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = com.yachiyo.UserService.tool.SelfValidator.class) // 绑定校验器
+@Constraint(validatedBy = com.yachiyo.PostingService.tool.SelfValidator.class) // 绑定校验器
 public @interface SensitiveWordFilter {
 
     // 提示信息

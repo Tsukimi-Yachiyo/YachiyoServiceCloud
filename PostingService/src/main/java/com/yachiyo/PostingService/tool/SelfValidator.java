@@ -2,7 +2,7 @@ package com.yachiyo.PostingService.tool;
 
 
 import com.github.kwfilter.util.KeyWordFilter;
-import com.yachiyo.UserService.tool.SensitiveWordFilter;
+import com.yachiyo.PostingService.tool.SensitiveWordFilter;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.springframework.beans.factory.annotation.Autowired;
