@@ -16,7 +16,7 @@ public interface FileClient {
                   @RequestParam(value = "prefix", defaultValue = "save") String prefix) ;
 
     @PutMapping("/save")
-    public boolean save(
+    boolean save(
             @RequestParam("fileName") String fileName,
             @RequestParam(required = false) MultipartFile file);
 }

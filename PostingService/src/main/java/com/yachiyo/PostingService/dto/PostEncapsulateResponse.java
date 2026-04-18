@@ -5,7 +5,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-public class PostEncapsulateResponse implements Serializable {
+public class PostEncapsulateResponse{
 
     private String title;
 

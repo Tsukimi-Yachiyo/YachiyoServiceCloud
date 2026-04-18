@@ -21,7 +21,7 @@ public class FileUrlUtil {
     public String generateFileUrl(String fileName, long expireSeconds, String prefix) {
         long expire = System.currentTimeMillis() / 1000 + expireSeconds;
         String sign = md5Hex( fileName + expire + KEY);
-        if (ioFileUtils.fileExist(fileName)) {
+        if (ioFileUtils.fileExist(fileName, prefix))  {
             return "/file/download/" + prefix + "?fileName=" + fileName + "&expire=" + expire + "&sign=" + sign;
         }else  {
             return null;

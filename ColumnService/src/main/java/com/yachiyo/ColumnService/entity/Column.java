@@ -9,7 +9,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Data @TableName("column")
+@Data @TableName("\"column\"")
 public class Column {
 
     @TableId(type = IdType.AUTO)
@@ -31,5 +31,6 @@ public class Column {
 
     private Long coin;
 
+    @TableField("\"like\"")
     private Long like;
 }
