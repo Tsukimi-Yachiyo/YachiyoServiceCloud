@@ -22,19 +22,13 @@ public class IOFileUtils {
 
     private final MinioClient minioClient;
 
-    @Value("${minio.bucketName}")
-    private String bucketName;
-
-    public static final String UPLOAD_PREFIX = "upload/";
-    public static final String SAVE_PREFIX = "save/";
-
     // ===================== 保存文件（到 save 目录） =====================
     public boolean saveFile(String fileName, MultipartFile fileBytes) {
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(SAVE_PREFIX + fileName)
+                            .bucket("save")
+                            .object(fileName)
                             .stream(fileBytes.getInputStream(), fileBytes.getSize(), -1)
                             .contentType(fileBytes.getContentType())
                             .build()
@@ -51,8 +45,26 @@ public class IOFileUtils {
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(UPLOAD_PREFIX + fileName)
+                            .bucket("upload")
+                            .object(fileName)
+                            .stream(fileBytes.getInputStream(), fileBytes.getSize(), -1)
+                            .contentType(fileBytes.getContentType())
+                            .build()
+            );
+            return true;
+        } catch (Exception e) {
+            log.error("MinIO上传文件失败", e);
+            return false;
+        }
+    }
+
+    // ===================== 上传文件（到 upload 目录） =====================
+    public boolean robotFile(@NonNull String fileName, @NonNull MultipartFile fileBytes) {
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket("robot")
+                            .object(fileName)
                             .stream(fileBytes.getInputStream(), fileBytes.getSize(), -1)
                             .contentType(fileBytes.getContentType())
                             .build()
@@ -68,8 +80,8 @@ public class IOFileUtils {
     public byte[] readFile(String fileName) {
         try (InputStream is = minioClient.getObject(
                 GetObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(UPLOAD_PREFIX + fileName)
+                        .bucket("upload")
+                        .object(fileName)
                         .build()
         )) {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -90,8 +102,8 @@ public class IOFileUtils {
         try {
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(UPLOAD_PREFIX + fileName)
+                            .bucket("upload")
+                            .object(fileName)
                             .build()
             );
         } catch (Exception e) {
@@ -101,13 +113,13 @@ public class IOFileUtils {
 
     // ===================== 获取目录下所有文件名 =====================
     public List<String> getFileNames(String dirName) throws IOException {
-        String prefix = UPLOAD_PREFIX + dirName + "/";
+        String prefix = dirName + "/";
         List<String> fileNames = new ArrayList<>();
 
         try {
             Iterable<Result<Item>> results = minioClient.listObjects(
                     ListObjectsArgs.builder()
-                            .bucket(bucketName)
+                            .bucket("upload")
                             .prefix(prefix)
                             .build()
             );
@@ -130,12 +142,12 @@ public class IOFileUtils {
     }
 
     // ===================== 检查文件是否存在 =====================
-    public boolean fileExist(String fileName) {
+    public boolean fileExist(String fileName,String bucketName) {
         try {
             minioClient.statObject(
                     StatObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(UPLOAD_PREFIX + fileName)
+                            .object(fileName)
                             .build()
             );
             return true;

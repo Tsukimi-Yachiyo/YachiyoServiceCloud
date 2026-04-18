@@ -80,7 +80,7 @@ public class ColumnServiceImpl implements ColumnService {
 
     @Override
     public Result<Boolean> addColumn(AddColumnRequest addColumnRequest) {
-        if (!fileClient.save(addColumnRequest.getName(),addColumnRequest.getFile())) {
+        if (!fileClient.save(addColumnRequest.getFile().getName(),addColumnRequest.getFile())) {
             return Result.error("500", "保存文件失败");
         }
         Column column = new Column();

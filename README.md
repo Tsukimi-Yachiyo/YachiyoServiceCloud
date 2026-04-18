@@ -1019,6 +1019,127 @@ curl -X POST http://localhost:8881/api/v2/posting/getMyPosting \
 
 ---
 
+## 专栏服务 (ColumnService)
+
+基础路径: `/api/v2/column`
+
+### 1. 搜索专栏
+
+**接口**: `GET /search`
+
+**需要认证**: 是
+
+**请求参数**:
+```json
+{
+  "keyword": "搜索关键词",
+  "pageNum": 1,
+  "pageSize": 10
+}
+```
+
+**响应**:
+```json
+{
+  "code": "200",
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "专栏名称",
+      "description": "专栏描述",
+      "type": "ARTICLE",
+      "writer": 1,
+      "essayUrl": "http://example.com/essay",
+      "createTime": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "detail": null
+}
+```
+
+**用例**:
+```bash
+curl -X GET http://localhost:8881/api/v2/column/search \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "keyword":"测试",
+    "pageNum":1,
+    "pageSize":10
+  }'
+```
+
+---
+
+### 2. 专栏互动（点赞/投币）
+
+**接口**: `POST /interaction`
+
+**需要认证**: 是
+
+**请求参数**:
+```json
+{
+  "columnId": 1,
+  "type": "LIKE"
+}
+```
+
+**互动类型 (InteractionType)**:
+- `LIKE` - 点赞
+- `COIN` - 投币
+
+**响应**:
+```json
+{
+  "code": "200",
+  "message": "success",
+  "data": true,
+  "detail": null
+}
+```
+
+**用例**:
+```bash
+curl -X POST http://localhost:8881/api/v2/column/interaction \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{"columnId":1,"type":"LIKE"}'
+```
+
+---
+
+### 3. 获取互动信息
+
+**接口**: `GET /getInteraction`
+
+**需要认证**: 是
+
+**请求参数**:
+- `columnId`: Long (Query 参数)
+
+**响应**:
+```json
+{
+  "code": "200",
+  "message": "success",
+  "data": {
+    "coin": 100,
+    "like": 50
+  },
+  "detail": null
+}
+```
+
+**用例**:
+```bash
+curl -X GET "http://localhost:8881/api/v2/column/getInteraction?columnId=1" \
+  -H "Authorization: Bearer {token}"
+```
+
+---
+
 ## 文件服务 (FileService)
 
 基础路径: `/file`

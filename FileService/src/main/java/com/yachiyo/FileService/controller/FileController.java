@@ -26,8 +26,6 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-import static com.yachiyo.FileService.utils.IOFileUtils.UPLOAD_PREFIX;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/file")
@@ -36,10 +34,6 @@ public class FileController {
     private final FileUrlUtil fileUrlUtil;
 
     private final MinioClient minioClient;
-
-    // 从配置文件读取MinIO桶名称
-    @Value("${minio.bucketName}")
-    private String bucketName;
 
     @GetMapping("/download/upload")
     public ResponseEntity<Resource> downloadFile(@RequestParam String fileName,
@@ -53,13 +47,13 @@ public class FileController {
 
         try {
             minioClient.statObject(StatObjectArgs.builder()
-                    .bucket(bucketName)
-                    .object(UPLOAD_PREFIX + fileName)
+                    .bucket("upload")
+                    .object(fileName)
                     .build());
 
             InputStream inputStream = minioClient.getObject(GetObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(UPLOAD_PREFIX + fileName)
+                        .bucket("upload")
+                        .object(fileName)
                         .build() );
 
                 InputStreamResource resource = new InputStreamResource(inputStream);
@@ -81,6 +75,13 @@ public class FileController {
         }
     }
 
+    @GetMapping("/download/robot")
+    public ResponseEntity<Resource> downloadFileFromRobot(@RequestParam String fileName,
+                                                 @RequestParam long expire,
+                                                 @RequestParam String sign){
+        return downloadFile(fileName, expire, sign);
+    }
+
     @GetMapping("/download/save")
     public ResponseEntity<StreamingResponseBody> bigFileDownload(@RequestParam String fileName,
                                                     @RequestParam long expire,
@@ -91,11 +92,11 @@ public class FileController {
             return ResponseEntity.status(403).body(null);
         }
 
-        String objectName = UPLOAD_PREFIX + fileName;
+        String objectName = fileName;
         try {
             // 提前获取文件元数据（可选，用于设置 Content-Length）
             StatObjectResponse stat = minioClient.statObject(
-                    StatObjectArgs.builder().bucket(bucketName).object(objectName).build()
+                    StatObjectArgs.builder().bucket("save").object(objectName).build()
             );
 
             String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
@@ -105,7 +106,7 @@ public class FileController {
             StreamingResponseBody streamBody = outputStream -> {
                 try (InputStream minioStream = minioClient.getObject(
                         GetObjectArgs.builder()
-                                .bucket(bucketName)
+                                .bucket("save")
                                 .object(objectName)
                                 .build())) {
                     byte[] buffer = new byte[1024 * 64];

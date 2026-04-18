@@ -10,10 +10,7 @@ import java.io.Serializable;
 
 @Data @NoArgsConstructor
 @AllArgsConstructor @Slf4j
-public class Result<T> implements Serializable {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
+public class Result<T>{
 
     private String code;
     private String message;

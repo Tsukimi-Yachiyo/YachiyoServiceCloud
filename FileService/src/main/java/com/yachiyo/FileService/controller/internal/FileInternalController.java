@@ -41,6 +41,13 @@ public class FileInternalController {
         return ioFileUtils.saveFile(fileName, file);
     }
 
+    @PutMapping("/robot")
+    public boolean robot(
+            @RequestParam("fileName") String fileName,
+            @RequestParam(required = false) MultipartFile file) {
+        return ioFileUtils.robotFile(fileName, file);
+    }
+
     @DeleteMapping("/delete")
     public boolean delete(
             @RequestParam("fileName") String fileName) {
@@ -56,8 +63,9 @@ public class FileInternalController {
 
     @GetMapping("/checkExist")
     public boolean checkExist(
-            @RequestParam("fileName") String fileName) {
-        return ioFileUtils.fileExist(fileName);
+            @RequestParam("fileName") String fileName,
+            @RequestParam(value = "bucketName",required = false,defaultValue = "upload") String bucketName) {
+        return ioFileUtils.fileExist(fileName,bucketName);
     }
 
     @GetMapping("/getNames")

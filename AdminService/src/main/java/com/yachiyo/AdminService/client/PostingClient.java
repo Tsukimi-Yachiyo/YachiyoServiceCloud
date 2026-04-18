@@ -15,7 +15,7 @@ import java.util.List;
 public interface PostingClient {
 
     @PostMapping("/review")
-    Result<Boolean> reviewPosting(@RequestBody @Valid ReviewRequest request) ;
+    Result<Boolean> reviewPosting(@RequestBody @Valid ReviewRequest request);
 
     @PostMapping("/query-postings")
     Result<List<PostingResponse>> queryPostings(@RequestBody @Valid PostingQueryRequest request);
