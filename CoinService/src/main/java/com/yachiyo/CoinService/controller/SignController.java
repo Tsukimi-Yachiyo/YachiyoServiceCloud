@@ -17,7 +17,7 @@ public class SignController {
      * 签到
      * @return 签到结果
      */
-    @PostMapping("/check-in")
+    @PostMapping("check-in")
     public Result<Boolean> signIn() {
         return signService.signIn();
     }

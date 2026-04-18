@@ -30,6 +30,7 @@
 		<module>FileService</module>
         <module>ToolService</module>
         <module>AdminService</module>
+        <module>ColumnService</module>
     </modules>
 	<scm>
 		<connection/>
