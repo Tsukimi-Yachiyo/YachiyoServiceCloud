@@ -46,7 +46,7 @@ public class AuthController {
      * @return 发送结果
      */
     @PostMapping("/send-code")
-    public Result<Boolean> SendCode(@RequestBody @Valid String email) {
+    public Result<Boolean> SendCode(@RequestParam @Valid String email) {
         return authService.SendCode(email);
     }
 

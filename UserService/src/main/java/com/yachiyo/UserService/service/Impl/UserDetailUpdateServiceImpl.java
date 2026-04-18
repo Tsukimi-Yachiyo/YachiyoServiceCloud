@@ -10,9 +10,11 @@ import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Date;
+import java.sql.Date;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class UserDetailUpdateServiceImpl implements UserDetailUpdateService {
@@ -77,13 +79,18 @@ public class UserDetailUpdateServiceImpl implements UserDetailUpdateService {
                                 }
 
                                 // 4. 日期比较
-                                LocalDate localDate = birthday.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                                LocalDate localDate = birthday.toLocalDate();
                                 int day = localDate.getDayOfMonth();
                                 int month = localDate.getMonthValue();
 
                                 boolean result = day == Integer.parseInt(dayObj.toString())
                                         && month == Integer.parseInt(monthObj.toString());
-                                return Mono.just(result);
+                                String redisMainKey = "user:" + userId;
+                                ReactiveHashOperations<String, String, Boolean> hashOps = reactiveRedisTemplate.opsForHash();
+                                hashOps.put(redisMainKey, "birthday", result)
+                                        .flatMap(success -> reactiveRedisTemplate.expire(redisMainKey,  Duration.ofHours(24)));
+
+                                return Mono.just(true);
                             })
                             .defaultIfEmpty(false);
                 })

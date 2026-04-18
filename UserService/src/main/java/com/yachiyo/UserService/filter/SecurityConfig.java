@@ -20,7 +20,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-        // 添加自定义 Header 认证 Filter（放在 Security 内置 Filter 之前）
+
         http.addFilterBefore(gatewayHeaderAuthenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION);
 
         http.authorizeExchange(exchanges -> exchanges
@@ -36,7 +36,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // CORS 配置（响应式版本）
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

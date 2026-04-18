@@ -10,7 +10,6 @@ import com.yachiyo.PostingService.mapper.PostingMapper;
 import com.yachiyo.PostingService.result.Result;
 import com.yachiyo.PostingService.service.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,9 +19,6 @@ public class AdminServiceImpl implements AdminService {
 
     @Autowired
     private PostingMapper postingMapper;
-
-    @Autowired
-    private CacheManager cacheManager;
 
     @Override
     public Result<Boolean> reviewPosting(ReviewRequest request) {

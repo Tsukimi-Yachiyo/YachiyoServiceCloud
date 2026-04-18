@@ -5,9 +5,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 @Data @NoArgsConstructor
 @AllArgsConstructor @Slf4j
-public class Result<T>{
+public class Result<T> implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private String code;
     private String message;
     private T data;

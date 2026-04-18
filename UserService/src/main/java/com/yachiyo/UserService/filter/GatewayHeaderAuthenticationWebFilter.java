@@ -13,7 +13,7 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE) // 确保在 Spring Security 过滤器之前执行
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class GatewayHeaderAuthenticationWebFilter implements WebFilter {
 
     @Override @NullMarked
@@ -27,11 +27,9 @@ public class GatewayHeaderAuthenticationWebFilter implements WebFilter {
 
         String userId = headers.getFirst("X-User-Id");
 
-        // 原逻辑只用了 userId，且 authority 列表为 null
         UsernamePasswordAuthenticationToken auth =
                 new UsernamePasswordAuthenticationToken(userId, null, null);
 
-        // 将认证信息放入响应式安全上下文
         return chain.filter(exchange)
                 .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth));
     }
