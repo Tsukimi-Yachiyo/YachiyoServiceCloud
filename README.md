@@ -8,6 +8,7 @@
 - [用户服务 (UserService)](#用户服务-userservice)
 - [金币服务 (CoinService)](#金币服务-coinservice)
 - [帖子服务 (PostingService)](#帖子服务-postingservice)
+- [专栏服务 (ColumnService)](#专栏服务-columnservice)
 - [文件服务 (FileService)](#文件服务-fileservice)
 - [管理员服务 (AdminService)](#管理员服务-adminservice)
 

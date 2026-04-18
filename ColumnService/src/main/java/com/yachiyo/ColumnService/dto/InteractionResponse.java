@@ -1,7 +1,11 @@
 package com.yachiyo.ColumnService.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-@Data
+import lombok.NoArgsConstructor;
+
+@Data @NoArgsConstructor
+@AllArgsConstructor
 public class InteractionResponse {
 
     private Long coin;
