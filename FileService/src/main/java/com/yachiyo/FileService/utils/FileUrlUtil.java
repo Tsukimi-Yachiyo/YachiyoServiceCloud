@@ -18,11 +18,11 @@ public class FileUrlUtil {
      * @param fileName 文件名
      * @return 带签名的文件URL
      */
-    public String generateFileUrl(String fileName, long expireSeconds) {
+    public String generateFileUrl(String fileName, long expireSeconds, String prefix) {
         long expire = System.currentTimeMillis() / 1000 + expireSeconds;
-        String sign = md5Hex(fileName + expire + KEY);
-        if (!ioFileUtils.fileExist(fileName)) {
-            return "/file/" + fileName + "?expire=" + expire + "&sign=" + sign;
+        String sign = md5Hex( fileName + expire + KEY);
+        if (ioFileUtils.fileExist(fileName)) {
+            return "/file/download/" + prefix + "?fileName=" + fileName + "&expire=" + expire + "&sign=" + sign;
         }else  {
             return null;
         }

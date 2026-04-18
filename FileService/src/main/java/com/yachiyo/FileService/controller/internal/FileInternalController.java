@@ -22,8 +22,9 @@ public class FileInternalController {
 
     @GetMapping("/getUrl")
     public String getUrl(@RequestParam("url") String url,
-            @RequestParam("time") long time) {
-        return fileUrlUtil.generateFileUrl(url, time);
+            @RequestParam("time") long time,
+            @RequestParam(value = "prefix", required = false,defaultValue = "upload") String prefix) {
+        return fileUrlUtil.generateFileUrl(url, time, prefix);
     }
 
     @PutMapping("/upload")

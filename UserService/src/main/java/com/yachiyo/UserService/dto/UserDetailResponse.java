@@ -4,7 +4,7 @@ import com.yachiyo.UserService.tool.SensitiveWordFilter;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.util.Date;
+import java.sql.Date;
 
 @Data @Accessors(chain = true)
 public class UserDetailResponse {
