@@ -1,1366 +1,357 @@
-# YachiyoServiceCloud API 文档
+# YachiyoServiceCloud - 月读平台
 
-## 目录
+## 1. 项目介绍
 
-- [安全认证](#安全认证)
-- [统一响应格式](#统一响应格式)
-- [认证服务 (AuthService)](#认证服务-authservice)
-- [用户服务 (UserService)](#用户服务-userservice)
-- [金币服务 (CoinService)](#金币服务-coinservice)
-- [帖子服务 (PostingService)](#帖子服务-postingservice)
-- [专栏服务 (ColumnService)](#专栏服务-columnservice)
-- [文件服务 (FileService)](#文件服务-fileservice)
-- [管理员服务 (AdminService)](#管理员服务-adminservice)
+### 1.1 项目背景
 
----
+YachiyoServiceCloud 是一个基于微服务架构的内容社区平台，设计灵感源自《超时空辉夜姬》中的月读元素。月读在日本神话中象征着神秘、智慧与知识的传承，本项目以此为设计理念，致力于打造一个安全、高效、易用的内容创作与分享社区。
 
-## 安全认证
+### 1.2 核心功能
 
-### 网关安全机制
+- **内容创作与分享**：支持用户发布、浏览、搜索各类帖子和专栏
+- **互动社交**：提供点赞、收藏、打赏、评论等互动功能
+- **积分体系**：完善的积分钱包管理、签到系统、打赏功能
+- **用户管理**：完整的用户注册、登录、个人信息管理
+- **内容审核**：管理员审核机制，确保内容质量
+- **文件管理**：安全可靠的文件上传、下载、存储服务
+- **专栏管理**：专业的专栏创建、维护、订阅功能
 
-系统使用 JWT（JSON Web Token）进行身份认证，通过网关服务统一处理。
+### 1.3 设计理念
 
-#### 请求头格式
+- **月读之明**：清晰的架构设计，让每个服务职责明确
+- **月读之深**：完善的功能体系，满足用户多样化需求
+- **月读之稳**：高可用性设计，确保服务稳定运行
+- **月读之美**：优雅的代码结构，便于维护与扩展
+
+## 2. 项目框架
+
+### 2.1 整体架构
+
+YachiyoServiceCloud 采用典型的微服务架构，通过 Spring Cloud Alibaba 技术栈实现服务治理。整体架构如下：
 
 ```
-Authorization: Bearer {token}
+┌─────────────────────────────────────────────────────────────┐
+│                        客户端层                              │
+│                    Web / App / MiniProgram                   │
+└────────────────────────────────────┬────────────────────────┘
+                                     │
+┌────────────────────────────────────▼────────────────────────┐
+│                      GatewayService (网关层)                  │
+│              - 路由转发  - JWT鉴权  - 访问日志  - 限流        │
+└────────────────────────────────────┬────────────────────────┘
+                                     │
+    ┌────────────────────────────────┼────────────────────────┐
+    │                                │                        │
+┌───▼─────┐ ┌───────────┐ ┌───────────▼─────────┐ ┌───────────┐
+│AuthService│ │UserService│ │   PostingService    │ │CoinService│
+│  认证服务  │ │  用户服务   │ │    帖子服务          │ │  积分服务  │
+└─────────┘ └───────────┘ └─────────────────────┘ └───────────┘
+    │               │                  │                   │
+┌───▼─────┐ ┌───────────┐ ┌───────────▼─────────┐ ┌───────────┐
+│AdminService││ColumnService│ │   FileService       │ │ToolService│
+│  管理服务  │ │  专栏服务   │ │    文件服务          │ │  工具服务  │
+└─────────┘ └───────────┘ └─────────────────────┘ └───────────┘
+    │               │                  │                   │
+    └───────────────┼──────────────────┴───────────────────┘
+                    │
+        ┌───────────┼───────────┐
+        │           │           │
+    ┌───▼───┐  ┌──▼─────┐  ┌──▼─────┐
+    │ Nacos │  │ Redis  │  │ Minio  │
+    │服务注册│  │ 缓存    │  │ 存储    │
+    └───────┘  └────────┘  └────────┘
+                    │
+                ┌───▼─────┐
+                │PostgreSQL│
+                │  数据库  │
+                └─────────┘
 ```
 
-#### 白名单路径
+### 2.2 服务模块关系
 
-以下路径无需认证：
-- `/api/v1/auth/login` - 用户名密码登录
-- `/api/v1/auth/register` - 用户注册
-- `/api/v1/auth/send-code` - 发送验证码
-- `/api/v1/auth/login-by-email` - 邮箱验证码登录
-- `/api/v1/auth/change-password` - 修改密码
-- `/api/v1/auth/refresh-token` - 刷新令牌
-- `/file/**` - 文件访问
-- `/api/yachiyo/168/mini/admin/login` - 管理员登录
-- `/actuator/health/**` - 健康检查
+- **GatewayService**：所有请求的统一入口，负责路由、鉴权、限流
+- **AuthService**：处理用户认证、授权、注册、登录
+- **UserService**：管理用户信息、头像、个人详情
+- **PostingService**：核心内容服务，负责帖子的发布、浏览、互动
+- **ColumnService**：专业内容服务，管理专栏创作与订阅
+- **CoinService**：积分与钱包管理，处理交易与签到
+- **AdminService**：后台管理服务，负责内容审核、系统管理
+- **FileService**：文件存储与分发服务
+- **ToolService**：提供定时任务、数据处理等工具功能
 
-#### 认证流程
+### 2.3 交互流程
 
-1. 从请求头提取 Token
-2. 验证 Token 有效性
-3. 验证 Token 是否过期
-4. 验证唯一码
-5. 解析用户信息并通过自定义 Header 传递给下游服务：
-   - `X-User-Id`: 用户 ID
-   - `X-User-Name`: 用户名
-   - `X-User-Role`: 角色（ROLE_USER 或 ROLE_ADMIN）
-   - `X-Auth-Token`: 原始 Token
+1. **用户认证流程**：
+   - 客户端通过 GatewayService 访问 AuthService
+   - AuthService 验证用户凭证并生成 JWT
+   - GatewayService 验证 JWT 并转发请求到具体服务
+2. **内容发布流程**：
+   - 用户上传内容到 FileService
+   - PostingService 保存内容信息
+   - 内容进入待审核状态
+   - AdminService 审核后内容发布
+3. **互动交易流程**：
+   - 用户通过 PostingService 进行点赞、收藏
+   - 打赏操作调用 CoinService 进行积分转移
+   - CoinService 记录交易日志
 
----
+## 3. 技术栈说明
 
-## 统一响应格式
+### 3.1 核心技术
 
-所有 API 响应统一使用以下 JSON 格式：
+| 技术/框架                | 版本         | 用途     |
+| -------------------- | ---------- | ------ |
+| Java                 | 25         | 编程语言   |
+| Spring Boot          | 4.0.5      | 应用框架   |
+| Spring Cloud         | 2025.1.1   | 微服务框架  |
+| Spring Cloud Alibaba | 2025.1.0.0 | 微服务组件  |
+| MyBatis Plus         | 3.5.16     | ORM 框架 |
+| Spring Security      | -          | 安全框架   |
 
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": {},
-  "detail": null
-}
-```
+### 3.2 基础设施
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| code | String | 状态码，200 表示成功 |
-| message | String | 响应消息 |
-| data | T | 响应数据，类型根据接口而定 |
-| detail | String | 详细信息，通常为 null |
+| 技术         | 用途         |
+| ---------- | ---------- |
+| Nacos      | 服务注册与配置中心  |
+| Redis      | 缓存、会话存储、限流 |
+| Minio      | 对象存储（文件存储） |
+| PostgreSQL | 关系型数据库     |
+| Sentinel   | 流量控制与熔断降级  |
+| Docker     | 容器化部署      |
 
----
+### 3.3 开发工具
 
-## 认证服务 (AuthService)
+| 工具      | 用途      |
+| ------- | ------- |
+| Maven   | 项目构建    |
+| Lombok  | 简化代码    |
+| Hutool  | 工具类库    |
+| Jackson | JSON 处理 |
 
-基础路径: `/api/v1/auth`
+## 4. 快速开始
 
-### 1. 用户名密码登录
+### 4.1 环境要求
 
-**接口**: `POST /login`
+- JDK 25+
+- Maven 3.8+
+- Docker 20.10+ (可选，用于容器化部署)
+- PostgreSQL 14+
+- Redis 7.0+
+- MinIO 最新版
+- Nacos 2.x
 
-**请求参数**:
-```json
-{
-  "username": "string",
-  "password": "string"
-}
-```
+### 4.2 安装步骤
 
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "detail": null
-}
-```
+#### 4.2.1 克隆项目
 
-**用例**:
 ```bash
-curl -X POST http://localhost:8881/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"123456"}'
+git clone <repository-url>
+cd YachiyoServiceCloud
 ```
 
----
+#### 4.2.2 启动基础设施
 
-### 2. 用户注册
+使用 Docker Compose 快速启动基础设施服务：
 
-**接口**: `POST /register`
-
-**请求参数**:
-```json
-{
-  "username": "string",
-  "password": "string",
-  "email": "string",
-  "code": "string"
-}
-```
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "detail": null
-}
-```
-
-**用例**:
 ```bash
-curl -X POST http://localhost:8881/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username":"newuser",
-    "password":"123456",
-    "email":"user@example.com",
-    "code":"123456"
-  }'
+docker-compose up -d redis nacos minio
 ```
 
----
+#### 4.2.3 数据库初始化
 
-### 3. 发送验证码
+各服务的数据库初始化脚本位于各自服务的 `src/main/resources/sql/` 目录下，请依次执行。
 
-**接口**: `POST /send-code`
+#### 4.2.4 配置文件
 
-**请求参数**:
-```json
-"user@example.com"
-```
+编辑各服务下的 `application.yml` 和 `application-secret.yml` 配置文件，根据实际情况修改数据库、Redis、Nacos 等连接信息。
 
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
+#### 4.2.5 编译项目
 
-**用例**:
 ```bash
-curl -X POST http://localhost:8881/api/v1/auth/send-code \
-  -H "Content-Type: application/json" \
-  -d '"user@example.com"'
+mvn clean install -DskipTests
 ```
 
----
+#### 4.2.6 启动服务
 
-### 4. 修改密码
+按以下顺序启动各服务：
 
-**接口**: `POST /change-password`
+1. GatewayService
+2. AuthService
+3. UserService
+4. FileService
+5. CoinService
+6. PostingService
+7. ColumnService
+8. AdminService
+9. ToolService
 
-**请求参数**:
-```json
-{
-  "username": "string",
-  "password": "string",
-  "email": "string",
-  "code": "string"
-}
-```
+每个服务可以通过以下命令启动：
 
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
 ```bash
-curl -X POST http://localhost:8881/api/v1/auth/change-password \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username":"testuser",
-    "password":"newpassword",
-    "email":"user@example.com",
-    "code":"123456"
-  }'
+cd <ServiceName>
+mvn spring-boot:run
 ```
 
----
+或者使用 Docker Compose 一键启动所有服务：
 
-### 5. 邮箱验证码登录
-
-**接口**: `POST /login-by-email`
-
-**请求参数**:
-```json
-{
-  "email": "string",
-  "code": "string"
-}
-```
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "detail": null
-}
-```
-
-**用例**:
 ```bash
-curl -X POST http://localhost:8881/api/v1/auth/login-by-email \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","code":"123456"}'
-```
-
----
-
-### 6. 退出登录
-
-**接口**: `POST /logout`
-
-**需要认证**: 是
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v1/auth/logout \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-### 7. 刷新令牌
-
-**接口**: `POST /refresh-token`
-
-**请求参数**:
-- `refreshToken`: String (Query 参数)
-- `userId`: Long (Query 参数)
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST "http://localhost:8881/api/v1/auth/refresh-token?refreshToken=xxx&userId=1"
-```
-
----
-
-## 用户服务 (UserService)
-
-基础路径: `/api/v2/user`
-
-### 1. 更新用户头像
-
-**接口**: `POST /avatar/update`
-
-**需要认证**: 是
-
-**请求参数**:
-- `avatar`: FilePart (multipart/form-data)
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/user/avatar/update \
-  -H "Authorization: Bearer {token}" \
-  -F "avatar=@/path/to/avatar.jpg"
-```
-
----
-
-### 2. 获取用户头像
-
-**接口**: `POST /avatar/get`
-
-**需要认证**: 是
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": "http://example.com/avatar.jpg",
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/user/avatar/get \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-### 3. 获取当前用户详情
-
-**接口**: `POST /detail/get`
-
-**需要认证**: 是
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": {
-    "userName": "string",
-    "userIntroduction": "string",
-    "userCity": "string",
-    "userGender": "string",
-    "userPhone": "string",
-    "userBirthday": "2024-01-01T00:00:00.000Z"
-  },
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/user/detail/get \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-### 4. 更新用户详情
-
-**接口**: `POST /detail/update`
-
-**需要认证**: 是
-
-**请求参数**:
-```json
-{
-  "userName": "string",
-  "userIntroduction": "string",
-  "userCity": "string",
-  "userGender": "string",
-  "userPhone": "string",
-  "userBirthday": "2024-01-01T00:00:00.000Z"
-}
-```
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/user/detail/update \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "userName":"newname",
-    "userIntroduction":"Hello!",
-    "userCity":"Beijing",
-    "userGender":"male",
-    "userPhone":"13800138000",
-    "userBirthday":"2000-01-01T00:00:00.000Z"
-  }'
-```
-
----
-
-### 5. 获取指定用户详情
-
-**接口**: `POST /detail/get/user`
-
-**需要认证**: 是
-
-**请求参数**:
-- `userId`: Long (Query 参数)
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": {
-    "userName": "string",
-    "userIntroduction": "string",
-    "userAvatar": "string"
-  },
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST "http://localhost:8881/api/v2/user/detail/get/user?userId=1" \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-## 金币服务 (CoinService)
-
-### 签到接口
-
-基础路径: `/api/v1/sign`
-
-#### 1. 签到
-
-**接口**: `POST /check-in`
-
-**需要认证**: 是
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v1/sign/check-in \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-#### 2. 获取签到状态
-
-**接口**: `POST /status`
-
-**需要认证**: 是
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v1/sign/status \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-### 金币交易接口
-
-基础路径: `/api/v2/coin`
-
-#### 1. 金币交易
-
-**接口**: `POST /change`
-
-**需要认证**: 是
-
-**请求参数**:
-```json
-{
-  "fromUserId": 1,
-  "toUserId": 2,
-  "type": "TIP",
-  "amount": 10.0
-}
-```
-
-**交易类型 (TradeType)**:
-- `TIP` - 打赏
-- `CHECKIN` - 签到
-- `MAIL` - 邮箱
-- `CHARGE` - 充值
-- `BUY` - 购买
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/coin/change \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "fromUserId":1,
-    "toUserId":2,
-    "type":"TIP",
-    "amount":10.0
-  }'
-```
-
----
-
-#### 2. 获取金币余额
-
-**接口**: `POST /get`
-
-**需要认证**: 是
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": 100,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/coin/get \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-## 帖子服务 (PostingService)
-
-### 评论接口
-
-基础路径: `/api/v2/post`
-
-#### 1. 添加评论
-
-**接口**: `POST /add-comment`
-
-**需要认证**: 是
-
-**请求参数**:
-```json
-{
-  "postingId": 1,
-  "content": "这是一条评论"
-}
-```
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/post/add-comment \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{"postingId":1,"content":"这是一条评论"}'
-```
-
----
-
-#### 2. 获取评论列表
-
-**接口**: `POST /get-comment-list`
-
-**需要认证**: 是
-
-**请求参数**:
-```json
-1
-```
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": [
-    {
-      "id": 1,
-      "content": "评论内容",
-      "userId": 1,
-      "userName": "用户名",
-      "createTime": "2024-01-01T00:00:00.000Z"
-    }
-  ],
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/post/get-comment-list \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d "1"
-```
-
----
-
-#### 3. 删除评论
-
-**接口**: `POST /delete-comment`
-
-**需要认证**: 是
-
-**请求参数**:
-```json
-1
-```
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/post/delete-comment \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d "1"
-```
-
----
-
-### 帖子公开接口
-
-基础路径: `/api/v2/posting`
-
-#### 1. 获取帖子详情
-
-**接口**: `POST /get`
-
-**需要认证**: 是
-
-**请求参数**:
-- `postingId`: Long (Query 参数)
+docker-compose up -d
+```
+
+### 4.3 验证安装
 
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": {
-    "id": 1,
-    "title": "帖子标题",
-    "content": "帖子内容",
-    "userId": 1,
-    "userName": "用户名",
-    "createTime": "2024-01-01T00:00:00.000Z",
-    "status": "APPROVED"
-  },
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST "http://localhost:8881/api/v2/posting/get?postingId=1" \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-#### 2. 获取帖子统计信息
-
-**接口**: `POST /stats`
-
-**需要认证**: 是
-
-**请求参数**:
-- `postingId`: Long (Query 参数)
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": {
-    "likeCount": 100,
-    "collectionCount": 50,
-    "commentCount": 30,
-    "viewCount": 1000
-  },
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST "http://localhost:8881/api/v2/posting/stats?postingId=1" \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-#### 3. 搜索帖子
-
-**接口**: `POST /search`
-
-**需要认证**: 是
-
-**请求参数**:
-- `keyword`: String (Query 参数)
-- `pageNum`: Integer (Query 参数)
-- `pageSize`: Integer (Query 参数)
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": [1, 2, 3],
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST "http://localhost:8881/api/v2/posting/search?keyword=测试&pageNum=1&pageSize=10" \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-#### 4. 获取点赞的帖子
-
-**接口**: `POST /like`
-
-**需要认证**: 是
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": [1, 2, 3],
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/posting/like \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-#### 5. 获取收藏的帖子
-
-**接口**: `POST /collection`
-
-**需要认证**: 是
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": [1, 2, 3],
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/posting/collection \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-#### 6. 获取帖子简述
-
-**接口**: `POST /encapsulate`
-
-**需要认证**: 是
-
-**请求参数**:
-- `postingId`: Long (Query 参数)
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": {
-    "id": 1,
-    "title": "帖子标题",
-    "briefContent": "帖子简要内容...",
-    "coverImage": "http://example.com/cover.jpg"
-  },
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST "http://localhost:8881/api/v2/posting/encapsulate?postingId=1" \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-#### 7. 帖子互动（点赞/收藏/投币）
-
-**接口**: `POST /interaction`
-
-**需要认证**: 是
-
-**请求参数**:
-```json
-{
-  "postingId": 1,
-  "type": "LIKE",
-  "action": "TOGGLE"
-}
-```
-
-**互动类型 (InteractionType)**:
-- `LIKE` - 点赞
-- `COLLECTION` - 收藏
-- `COIN` - 投币
-
-**互动操作 (InteractionAction)**:
-- `ADD` - 添加
-- `REMOVE` - 移除
-- `TOGGLE` - 切换
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/posting/interaction \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{"postingId":1,"type":"LIKE","action":"TOGGLE"}'
-```
-
----
-
-### 个人帖子接口
-
-基础路径: `/api/v2/posting`
-
-#### 1. 上传帖子
-
-**接口**: `POST /upload`
-
-**需要认证**: 是
-
-**请求参数** (multipart/form-data):
-- `title`: String
-- `content`: String
-- `type`: String
-- `coverImage`: MultipartFile (可选)
-- `files`: List<MultipartFile> (可选)
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/posting/upload \
-  -H "Authorization: Bearer {token}" \
-  -F "title=测试帖子" \
-  -F "content=这是帖子内容" \
-  -F "type=article" \
-  -F "coverImage=@/path/to/cover.jpg"
-```
-
----
-
-#### 2. 删除帖子
-
-**接口**: `POST /delete`
-
-**需要认证**: 是
-
-**请求参数**:
-- `postingId`: Long (Query 参数)
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST "http://localhost:8881/api/v2/posting/delete?postingId=1" \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-#### 3. 获取自己的帖子
-
-**接口**: `POST /getMyPosting`
-
-**需要认证**: 是
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": [
-    {
-      "id": 1,
-      "title": "帖子标题",
-      "status": "APPROVED",
-      "createTime": "2024-01-01T00:00:00.000Z"
-    }
-  ],
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/posting/getMyPosting \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-## 专栏服务 (ColumnService)
-
-基础路径: `/api/v2/column`
-
-### 1. 搜索专栏
-
-**接口**: `GET /search`
-
-**需要认证**: 是
-
-**请求参数**:
-```json
-{
-  "keyword": "搜索关键词",
-  "pageNum": 1,
-  "pageSize": 10
-}
-```
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": [
-    {
-      "id": 1,
-      "name": "专栏名称",
-      "description": "专栏描述",
-      "type": "ARTICLE",
-      "writer": 1,
-      "essayUrl": "http://example.com/essay",
-      "createTime": "2024-01-01T00:00:00.000Z"
-    }
-  ],
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X GET http://localhost:8881/api/v2/column/search \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "keyword":"测试",
-    "pageNum":1,
-    "pageSize":10
-  }'
-```
-
----
-
-### 2. 专栏互动（点赞/投币）
-
-**接口**: `POST /interaction`
-
-**需要认证**: 是
-
-**请求参数**:
-```json
-{
-  "columnId": 1,
-  "type": "LIKE"
-}
-```
-
-**互动类型 (InteractionType)**:
-- `LIKE` - 点赞
-- `COIN` - 投币
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST http://localhost:8881/api/v2/column/interaction \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{"columnId":1,"type":"LIKE"}'
-```
-
----
-
-### 3. 获取互动信息
-
-**接口**: `GET /getInteraction`
-
-**需要认证**: 是
-
-**请求参数**:
-- `columnId`: Long (Query 参数)
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": {
-    "coin": 100,
-    "like": 50
-  },
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X GET "http://localhost:8881/api/v2/column/getInteraction?columnId=1" \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-## 文件服务 (FileService)
-
-基础路径: `/file`
+访问以下地址验证服务是否正常启动：
+
+- Nacos 控制台：<http://localhost:8848/nacos> (默认账号：nacos / KaguyaIrohaForever)
+- MinIO 控制台：<http://localhost:9001> (默认账号：minio / yachiyohahaha)
+- Gateway 健康检查：<http://localhost:8881/actuator/health>
+
+## 5. 功能说明
 
-### 1. 生成/获取文件
+### 5.1 GatewayService - 网关服务
+
+- **端口**：8881
+- **主要功能**：
+  - 统一入口路由
+  - JWT 认证与验证
+  - 访问日志记录
+  - 集成 Sentinel 进行流量控制
+  - 服务发现与负载均衡
+
+### 5.2 AuthService - 认证服务
+
+- **主要功能**：
+  - 用户注册（支持邮箱验证码）
+  - 用户登录（用户名密码/邮箱验证码）
+  - 密码修改
+  - JWT Token 生成与刷新
+  - 用户登出
+  - 集成 UserService 和 CoinService 完成新用户初始化
+
+### 5.3 UserService - 用户服务
+
+- **主要功能**：
+  - 用户详情管理
+  - 头像上传与获取
+  - 个人信息编辑
+  - 查看其他用户信息
+  - 响应式编程实现（WebFlux）
+
+### 5.4 PostingService - 帖子服务
+
+- **主要功能**：
+  - 帖子发布（支持封面、附件上传）
+  - 帖子搜索与浏览
+  - 点赞、收藏、打赏等互动
+  - 评论功能
+  - 帖子审核流程
+  - 个人帖子管理
+  - 推荐帖子功能
+  - 帖子统计数据（阅读、点赞、收藏、打赏数）
+  - 集成 Redis 缓存提升性能
 
-**接口**: `GET /generate`
+### 5.5 ColumnService - 专栏服务
 
-**需要认证**: 否
+- **主要功能**：
+  - 专栏创建与发布
+  - 专栏搜索与浏览
+  - 专栏互动（点赞、打赏）
+  - 专栏文件管理
+  - 专栏分类管理
 
-**请求参数**:
-- `fileName`: String (Query 参数)
-- `expire`: long (Query 参数)
-- `sign`: String (Query 参数)
+### 5.6 CoinService - 积分服务
 
-**响应**: 文件流
+- **主要功能**：
+  - 用户钱包管理
+  - 积分交易处理
+  - 每日签到功能
+  - 交易记录查询
+  - 支持打赏等双向交易
 
-**说明**: 此接口通过签名验证获取 MinIO 中的文件
+### 5.7 AdminService - 管理服务
 
----
+- **主要功能**：
+  - 管理员登录
+  - 帖子审核（通过/驳回）
+  - 帖子查询与管理
+  - 专栏管理（添加/删除）
+  - 系统命令执行
 
-## 管理员服务 (AdminService)
+### 5.8 FileService - 文件服务
 
-基础路径: `/api/yachiyo/168/mini/admin`
+- **主要功能**：
+  - 文件上传
+  - 文件下载（带签名验证）
+  - 文件管理
+  - 大文件流式下载
+  - 基于 MinIO 的对象存储
 
-### 1. 管理员登录
+### 5.9 ToolService - 工具服务
 
-**接口**: `POST /login`
+- **主要功能**：
+  - 定时任务调度
+  - 帖子自动审核（待实现）
+  - 推荐算法执行（待实现）
+  - 数据统计与处理
 
-**请求参数**:
-- `username`: String (Query 参数)
-- `password`: String (Query 参数)
+## 6. TODO列表
 
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "detail": null
-}
-```
-
-**用例**:
-```bash
-curl -X POST "http://localhost:8881/api/yachiyo/168/mini/admin/login?username=admin&password=admin123"
-```
-
----
-
-### 2. 上传资源
-
-**接口**: `POST /upload`
-
-**需要认证**: 是
-
-**请求参数**:
-- `files`: List<MultipartFile> (Query 参数)
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
----
-
-### 3. 执行命令
-
-**接口**: `POST /run-command`
-
-**需要认证**: 是
-
-**请求参数**:
-- `command`: String (Query 参数)
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": "命令执行结果",
-  "detail": null
-}
-```
+### 6.1 性能优化
 
----
+- [ ] 优化各服务接口响应时间
+- [ ] 完善数据库索引设计
+- [ ] 优化慢查询
+- [ ] 添加接口监控与性能分析
+- [ ] 提升系统并发处理能力
 
-### 4. 获取剩余 Token
+### 6.2 缓存机制
 
-**接口**: `POST /get-remaining-token`
+- [ ] 完善 Redis 缓存策略
+- [ ] 添加本地缓存（Caffeine）
+- [ ] 实现缓存预热
+- [ ] 优化缓存失效策略
+- [ ] 添加缓存监控
 
-**需要认证**: 是
+### 6.3 新增功能模块
 
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": 10000,
-  "detail": null
-}
-```
-
----
-
-### 5. 更改 API Key
-
-**接口**: `POST /change-api-key`
-
-**需要认证**: 是
-
-**请求参数**:
-- `apiKey`: String (Query 参数)
-- `model`: String (Query 参数)
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": null,
-  "detail": null
-}
-```
-
----
+- [ ] **商场微服务**：
+  - 商品管理
+  - 订单处理
+  - 购物车功能
+  - 积分兑换商品
+- [ ] **站内信微服务**：
+  - 私信功能
+  - 系统通知
+  - 消息推送
+  - 消息已读状态
 
-### 6. 审核帖子
+### 6.4 代码质量
 
-**接口**: `POST /review`
+- [ ] 完善代码注释
+- [ ] 补充单元测试
+- [ ] 补充集成测试
+- [ ] 代码规范检查
+- [ ] 优化代码结构，提升可维护性
 
-**需要认证**: 是
+### 6.5 运维与部署
 
-**请求参数**:
-```json
-{
-  "postingId": 1,
-  "action": "APPROVE",
-  "reason": "拒绝原因（可选）"
-}
-```
-
-**审核操作 (ReviewAction)**:
-- `APPROVE` - 批准
-- `REJECT` - 拒绝
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": true,
-  "detail": null
-}
-```
-
----
+- [ ] 完善监控告警体系
+- [ ] 添加日志收集与分析
+- [ ] 完善 Docker Compose 配置
+- [ ] 添加 Kubernetes 部署配置
+- [ ] 完善 CI/CD 流程
 
-### 7. 查询帖子
+## 7. 许可证
 
-**接口**: `POST /query-postings`
+本项目采用 [LICENSE](LICENSE) 中规定的许可证。
 
-**需要认证**: 是
+## 8. 联系方式
 
-**请求参数**:
-```json
-{
-  "status": "PENDING",
-  "pageNum": 1,
-  "pageSize": 10
-}
-```
-
-**响应**:
-```json
-{
-  "code": "200",
-  "message": "success",
-  "data": [
-    {
-      "id": 1,
-      "title": "帖子标题",
-      "status": "PENDING",
-      "createTime": "2024-01-01T00:00:00.000Z"
-    }
-  ],
-  "detail": null
-}
-```
-
----
-
-## 错误码说明
-
-| HTTP 状态码 | 说明 |
-|-------------|------|
-| 200 | 请求成功 |
-| 401 | 未认证/Token 无效/Token 过期 |
-| 403 | 禁止访问 |
-| 404 | 资源不存在 |
-| 500 | 服务器内部错误 |
-
-网关返回的错误格式：
-```json
-{
-  "error": 401,
-  "message": "未认证"
-}
-```
+如有问题或建议，欢迎通过以下方式联系我们。
 
----
+- drayee 1473443474
+- 1094218305
 
-## 注意事项
+***
 
-1. 所有需要认证的接口都需要在请求头中携带有效的 JWT Token
-2. Token 格式为 `Bearer {token}`
-3. 敏感词会被过滤，请确保内容合规
-4. 文件访问需要通过签名验证
-5. 部分接口使用 multipart/form-data 格式，请根据接口说明正确选择请求格式
+## **Tsukuyomi！**
