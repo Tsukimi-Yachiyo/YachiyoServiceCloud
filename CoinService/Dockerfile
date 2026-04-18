@@ -1,7 +1,6 @@
 # 基础Java镜像
 FROM eclipse-temurin:25-jdk
 
-
 # 工作目录
 WORKDIR /app
 

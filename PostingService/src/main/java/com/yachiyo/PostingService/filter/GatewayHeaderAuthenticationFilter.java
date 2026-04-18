@@ -26,11 +26,11 @@ public class GatewayHeaderAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
-        String userId = request.getHeader("X-User-Id");
+        Long userId = Long.parseLong(request.getHeader("X-User-Id"));
         String username = request.getHeader("X-User-Name");
         String role = request.getHeader("X-User-Role");
 
-        if (userId != null && username != null) {
+        if (username != null) {
             // 构造权限集合，角色名需以 "ROLE_" 开头，与 hasRole 匹配
             List<GrantedAuthority> authorities = Collections.singletonList(
                     new SimpleGrantedAuthority(role) // 例如 "ROLE_ADMIN"
@@ -53,6 +53,6 @@ public class GatewayHeaderAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String uri = request.getRequestURI();
-        return !pathMatcher.match("/internal/**", uri);
+        return pathMatcher.match("/internal/**", uri);
     }
 }
