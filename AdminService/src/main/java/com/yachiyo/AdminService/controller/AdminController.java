@@ -1,17 +1,13 @@
 package com.yachiyo.AdminService.controller;
 
-import com.yachiyo.AdminService.dto.PostingQueryRequest;
-import com.yachiyo.AdminService.dto.ReviewRequest;
-import com.yachiyo.AdminService.dto.PostingResponse;
-import com.yachiyo.AdminService.dto.UserResponse;
+import com.yachiyo.AdminService.client.ColumnClient;
+import com.yachiyo.AdminService.dto.*;
 import com.yachiyo.AdminService.result.Result;
 import com.yachiyo.AdminService.service.AdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -22,6 +18,8 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+
+    private final ColumnClient columnClient;
 
     @PostMapping("/run-command")
     public Result<String> runCommand(@RequestParam("command") String command) {
@@ -44,5 +42,15 @@ public class AdminController {
     @PostMapping("/query-postings")
     public Result<List<PostingResponse>> queryPostings(@RequestBody @Valid PostingQueryRequest request) {
         return adminService.queryPostings(request);
+    }
+
+    @PutMapping("/add-column")
+    public Result<Boolean> addColumn(@RequestPart @Valid AddColumnRequest request) {
+        return columnClient.addColumn(request);
+    }
+
+    @DeleteMapping("/delete-column")
+    public Result<Boolean> deleteColumn(@RequestParam("id") Long id) {
+        return columnClient.deleteColumn(id);
     }
 }

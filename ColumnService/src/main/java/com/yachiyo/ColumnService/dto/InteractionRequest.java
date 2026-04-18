@@ -1,11 +1,11 @@
 package com.yachiyo.ColumnService.dto;
 
-import com.yachiyo.PostingService.enumeration.InteractionAction;
+import com.yachiyo.ColumnService.dto.InteractionType;
 import lombok.Data;
 
 @Data
 public class InteractionRequest {
 
-    Long postId;
-    InteractionAction action;
+    Long columnId;
+    InteractionType type;
 }

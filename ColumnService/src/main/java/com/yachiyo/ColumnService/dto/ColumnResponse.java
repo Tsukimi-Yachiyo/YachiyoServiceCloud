@@ -1,8 +1,13 @@
 package com.yachiyo.ColumnService.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Data
+import java.time.LocalDateTime;
+
+@Data @AllArgsConstructor
+@NoArgsConstructor
 public class ColumnResponse {
     private Long id;
 
@@ -16,6 +21,6 @@ public class ColumnResponse {
 
     private String essayUrl;
 
-    private Data createTime;
+    private LocalDateTime createTime;
 
 }

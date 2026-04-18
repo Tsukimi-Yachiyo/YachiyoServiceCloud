@@ -34,3 +34,6 @@ spring:
             refresh-enabled: true         # 启用动态刷新
   config:
     import: nacos:${spring.application.name}
+
+  profiles:
+    include: secret

@@ -3,6 +3,7 @@ package com.yachiyo.PostingService.service.Impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.yachiyo.PostingService.client.CoinClient;
 import com.yachiyo.PostingService.client.FileClient;
 import com.yachiyo.PostingService.dto.*;
 import com.yachiyo.PostingService.entity.*;
@@ -39,6 +40,7 @@ public class PostingServiceImpl implements PostingService {
     private final LinkCoinMapper linkCoinMapper;
     private final FileClient fileClient;
     private final CacheManager cacheManager;
+    private final CoinClient coinClient;
 
     private static final String POSTING_SEARCH_CACHE_NAME = "public:posting:search";
     private static final String POSTING_DETAIL_CACHE_NAME = "public:posting:detail";
@@ -242,6 +244,11 @@ public class PostingServiceImpl implements PostingService {
                     linkCollectionMapper.insert(linkCollection);
                     postDetail.setCollection(postDetail.getCollection() + 1);
                 } else {
+                    try{
+                        coinClient.changeCoin(userId, new CoinChangeRequest(userId, postingMapper.selectById(postingId).getUserId(), TradeType.TIP, 1.0));
+                    }catch (Exception e){
+                        return Result.error("500", "扣除积分失败");
+                    }
                     LinkCoin linkCoin = new LinkCoin();
                     linkCoin.setUserId(userId);
                     linkCoin.setPostingId(postingId);

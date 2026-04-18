@@ -5,10 +5,12 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 
-@EqualsAndHashCode(callSuper = true)
 @Data
-public class CommentResponse extends CommentRequest implements Serializable {
+public class CommentResponse implements Serializable {
 
     private Long id;
+
     private Long userId;
+
+    private String content;
 }

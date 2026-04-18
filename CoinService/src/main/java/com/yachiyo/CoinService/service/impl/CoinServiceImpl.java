@@ -30,7 +30,7 @@ public class CoinServiceImpl implements CoinService {
                     // 打赏金额必须为正数
                     // 扣款
                     amount = Math.max(amount, 0);
-                    coinUtils.changeCoin(request.getFromUserId(), - amount, businessType);
+                    coinUtils.changeCoin(request.getFromUserId(), -10 * amount, businessType);
                 } else {
                     return Result.error("400", businessType, "打赏交易只能对其他用户进行操作");
                 }

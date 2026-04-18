@@ -1,6 +1,6 @@
 package com.yachiyo.ColumnService.config;
 
-import com.yachiyo.PostingService.result.Result;
+import com.yachiyo.ColumnService.result.Result;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 

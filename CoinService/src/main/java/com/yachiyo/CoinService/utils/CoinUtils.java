@@ -20,14 +20,6 @@ public class CoinUtils {
     @Autowired
     private UserWalletMapper userWalletMapper;
 
-    public void addCoin(Long toUserId, Double amount, String businessType) {
-        changeCoin(toUserId, amount, businessType);
-    }
-
-    public void consumeCoin(Long toUserId, Double amount, String businessType) {
-        changeCoin(toUserId, -amount, businessType);
-    }
-
     public void changeCoin(Long toUserId, Double amount, String businessType) {
         // 从数据库中查询用户信息
         UserWallet userWallet = userWalletMapper.selectById(toUserId);
