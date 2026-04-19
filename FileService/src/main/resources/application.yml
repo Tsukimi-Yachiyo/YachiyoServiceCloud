@@ -1,9 +1,14 @@
 server:
   port: 8972
+  tomcat:
+      connection-timeout: 3600000ms  # 连接超时 1小时
+      max-http-response-header-size: 8KB
+  max-http-request-header-size: 8KB
 
 spring:
   application:
     name: file-service # 应用名称
+
 
   cloud:
     nacos:
@@ -26,9 +31,11 @@ spring:
 
   profiles:
     include: secret
+  mvc:
+    async:
+      request-timeout: 3600000s
 
-minio:
-  endpoint: http://127.0.0.1:9000
-  accessKey: ${minio.accessKey}
-  secretKey: ${minio.secretKey}
-  bucketName: uploadbucket
+  minio:
+    endpoint: http://127.0.0.1:9000
+    access-key: ${minio.accessKey}
+    secret-key: ${minio.secretKey}
