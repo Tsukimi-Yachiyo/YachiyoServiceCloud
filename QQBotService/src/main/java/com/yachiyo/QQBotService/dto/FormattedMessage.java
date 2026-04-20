@@ -10,16 +10,13 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FormattedMessage {
-    private String content;
+    private String promptText;
+    private List<Long> atList;
+    private List<String> fileNames;
     private List<String> relevantUrls;
 
-    public FormattedMessage(String content, String relevantUrl) {
-        this.content = content;
-        this.relevantUrls = List.of(relevantUrl);
-    }
-
     public FormattedMessage append(String content, String relevantUrl) {
-        this.content += " " + content;
+        this.promptText += " " + content;
         this.relevantUrls.add(relevantUrl);
         return this;
     }

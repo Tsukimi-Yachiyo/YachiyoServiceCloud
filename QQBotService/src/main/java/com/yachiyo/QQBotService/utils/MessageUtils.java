@@ -5,6 +5,8 @@ import com.mikuac.shiro.dto.event.message.MessageEvent;
 import com.mikuac.shiro.enums.MsgTypeEnum;
 import com.mikuac.shiro.model.ArrayMsg;
 import com.yachiyo.QQBotService.dto.FormattedMessage;
+import com.yachiyo.QQBotService.dto.UploadFileRequest;
+import com.yachiyo.QQBotService.service.FileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,18 +22,22 @@ import java.util.List;
 @Component
 public class MessageUtils {
     @Autowired
+    private FileService fileService;
+
+    @Autowired
     private CQCodeUtils CQCodeUtils;
 
     public FormattedMessage format(MessageEvent event) {
         List<ArrayMsg> arrayMsgList = event.getArrayMsg();
-        String plainText = event.getPlainText();
-
         StringBuilder sb = new StringBuilder();
+
+        List<Long> atList = new ArrayList<>();
+        List<String> fileNames = this.uploadFilesForName(arrayMsgList);
         List<String> relevantUrls = new ArrayList<>();
         for (ArrayMsg arrayMsg : arrayMsgList) {
             switch (arrayMsg.getType()) {
                 case MsgTypeEnum.text -> sb.append(arrayMsg.getStringData("text"));
-                case MsgTypeEnum.at -> sb.append(formatAt(arrayMsg));
+                case MsgTypeEnum.at -> sb.append(formatAt(arrayMsg, atList));
                 case MsgTypeEnum.reply -> sb.append(formatReply(arrayMsg));
                 case MsgTypeEnum.forward -> sb.append(formatForward(arrayMsg));
                 case MsgTypeEnum.image -> sb.append(formatImage(arrayMsg));
@@ -47,13 +53,13 @@ public class MessageUtils {
             }
             sb.append(" "); // 添加空格以分隔CQ码
         }
-        sb.append(plainText);
 
-        return new FormattedMessage(sb.toString().trim(), relevantUrls);
+        return new FormattedMessage(sb.toString().trim(), atList, fileNames, relevantUrls);
     }
 
-    public String formatAt(ArrayMsg arrayMsg) {
+    public String formatAt(ArrayMsg arrayMsg, List<Long> atList) {
         if (!CQCodeUtils.typeEq(arrayMsg, MsgTypeEnum.at)) return "";
+        atList.add(arrayMsg.getLongData("qq"));
         return "AT";
     }
 
@@ -132,11 +138,29 @@ public class MessageUtils {
      * @return 清理后的字符串，默认摘要或者空摘要会被删除
      */
     private String cleaningSummary(String summary) {
-        String ret = summary.replace("&#91;", "").replace("&#93;", "");
+        String ret = summary
+                .replace("&#91;", "")
+                .replace("&#93;", "")
+                .replace("[", "")
+                .replace("]", "")
+                ;
         if ("动画表情".equals(ret) || ret.isBlank()) {
             return "";
         } else {
             return ":" + ret;
         }
+    }
+
+    /**
+     * 解析CQ码，下载其中包含的文件（如图片、语音、视频等），上传到MinIO，并返回新的文件名列表
+     * @param arrayMsgList CQ码列表
+     * @return 上传后的文件名列表，若消息中不包含可下载的CQ码或上传失败则返回空列表
+     */
+    private List<String> uploadFilesForName(List<ArrayMsg> arrayMsgList) {
+        // 1. 解析CQ码中的可下载内容（如图片、语音、视频等），获取它们的URL和文件名
+        List<UploadFileRequest> uploadFileList = CQCodeUtils.getUploadFileList(arrayMsgList);
+        // 2. 下载这些内容并上传到MinIO，获取其新的文件名
+        // 3. 将已保存的文件名列表保存到数据库
+        return fileService.uploadFiles(uploadFileList).getData();
     }
 }
