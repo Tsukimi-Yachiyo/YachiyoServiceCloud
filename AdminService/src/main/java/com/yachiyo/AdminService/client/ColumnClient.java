@@ -12,5 +12,5 @@ public interface ColumnClient {
     public Result<Boolean> addColumn(@RequestPart AddColumnRequest addColumnRequest) ;
 
     @DeleteMapping
-    public Result<Boolean> deleteColumn(@RequestBody Long id) ;
+    public Result<Boolean> deleteColumn(@RequestPart Long id) ;
 }

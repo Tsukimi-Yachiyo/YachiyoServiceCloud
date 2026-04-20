@@ -30,21 +30,21 @@ public class FileInternalController {
     @PostMapping("/upload")
     public boolean upload(
             @RequestParam("fileName") String fileName,
-            @RequestParam(required = false) MultipartFile file) {
+            @RequestPart(required = false) MultipartFile file) {
         return ioFileUtils.uploadFile(fileName, file);
     }
 
     @PostMapping("/save")
     public boolean save(
             @RequestParam("fileName") String fileName,
-            @RequestParam(required = false) MultipartFile file) {
+            @RequestPart(required = false) MultipartFile file) {
         return ioFileUtils.saveFile(fileName, file);
     }
 
     @PostMapping("/robot")
     public boolean robot(
             @RequestParam("fileName") String fileName,
-            @RequestParam(required = false) MultipartFile file) {
+            @RequestPart(required = false) MultipartFile file) {
         return ioFileUtils.robotFile(fileName, file);
     }
 
