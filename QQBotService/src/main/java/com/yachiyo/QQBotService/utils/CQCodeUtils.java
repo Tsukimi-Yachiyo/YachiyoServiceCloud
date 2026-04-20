@@ -79,6 +79,18 @@ public class CQCodeUtils {
     }
 
     /**
+     * 从 CQ 码列表中筛选出所有 at CQ 码中的 QQ 号，并将其添加到提供的 atList 中
+     * @param arrayMsgList CQ 码列表
+     * @param atList QQ 号的列表
+     */
+    public void computeAtList(List<ArrayMsg> arrayMsgList, List<Long> atList) {
+        arrayMsgList.stream()
+                .filter(msg -> typeEq(msg, MsgTypeEnum.at))
+                .map(msg -> msg.getLongData("qq"))
+                .forEach(atList::add);
+    }
+
+    /**
      * 从 CQ 码列表中合并转发消息的 id
      * @param arrayMsgList CQ 码列表
      * @return 合并转发消息的 id，若不存在转发消息则返回 -1

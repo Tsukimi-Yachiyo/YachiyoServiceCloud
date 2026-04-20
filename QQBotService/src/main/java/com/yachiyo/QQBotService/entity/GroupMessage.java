@@ -41,10 +41,10 @@ public class GroupMessage {
     private List<Long> atList; // at列表
 
     @TableField(value = "file_names", typeHandler = GsonTypeHandler.class)
-    private List<String> fileList; // minio的文件名列表
+    private List<String> fileNames; // minio的文件名列表
 
     @TableField("prompt_text")
-    private String messageForAgent; // 保持了结构和信息且精简过CQ码的消息，可用于上下文投喂
+    private String promptText; // 保持了结构和信息且精简过CQ码的消息，可用于上下文投喂
 
     @TableField(value = "relevant_urls", typeHandler = GsonTypeHandler.class)
     private List<String> relevantUrls; // 与消息相关的URL列表
