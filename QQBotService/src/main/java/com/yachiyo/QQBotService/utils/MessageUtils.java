@@ -47,6 +47,7 @@ public class MessageUtils {
                 case MsgTypeEnum.rps -> sb.append(formatRps(arrayMsg));
                 case MsgTypeEnum.face -> sb.append(formatFace(arrayMsg));
                 case MsgTypeEnum.json -> sb.append(formatJson(arrayMsg, relevantUrls));
+                default -> log.warn("未支持的CQ码类型，已跳过：{}", arrayMsg.getRawType());
             }
             if (CQCodeUtils.typeEq(arrayMsg, "file")) {
                 sb.append(formatFile(arrayMsg));
