@@ -11,7 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 public class FormattedMessage {
     private String promptText;
-    private List<Long> atList;
+    private List<String> atList;
     private List<String> fileNames;
     private List<String> relevantUrls;
 

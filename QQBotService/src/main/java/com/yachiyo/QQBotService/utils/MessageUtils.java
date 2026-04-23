@@ -31,7 +31,7 @@ public class MessageUtils {
         List<ArrayMsg> arrayMsgList = event.getArrayMsg();
         StringBuilder sb = new StringBuilder();
 
-        List<Long> atList = new ArrayList<>();
+        List<String> atList = new ArrayList<>();
         List<String> fileNames = this.uploadFilesForName(arrayMsgList);
         List<String> relevantUrls = new ArrayList<>();
         for (ArrayMsg arrayMsg : arrayMsgList) {
@@ -58,10 +58,11 @@ public class MessageUtils {
         return new FormattedMessage(sb.toString().trim(), atList, fileNames, relevantUrls);
     }
 
-    public String formatAt(ArrayMsg arrayMsg, List<Long> atList) {
+    public String formatAt(ArrayMsg arrayMsg, List<String> atList) {
         if (!CQCodeUtils.typeEq(arrayMsg, MsgTypeEnum.at)) return "";
-        atList.add(arrayMsg.getLongData("qq"));
-        return "AT";
+        String atDetail = arrayMsg.getStringData("qq");
+        atList.add(atDetail);
+        return "AT:" + atDetail;
     }
 
     public String formatReply(ArrayMsg arrayMsg) {

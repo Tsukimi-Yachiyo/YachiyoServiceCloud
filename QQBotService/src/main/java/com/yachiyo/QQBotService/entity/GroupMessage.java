@@ -38,7 +38,7 @@ public class GroupMessage {
     private Boolean isRecalled; // 是否已被撤回
 
     @TableField(value = "at_list", typeHandler = GsonTypeHandler.class)
-    private List<Long> atList; // at列表
+    private List<String> atList; // at列表
 
     @TableField(value = "file_names", typeHandler = GsonTypeHandler.class)
     private List<String> fileNames; // minio的文件名列表

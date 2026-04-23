@@ -143,7 +143,7 @@ public class GroupMessageServiceImpl implements GroupMessageService {
         groupMessage.setSendTime(unixUtils.ofSecond(event.getTime()));
         groupMessage.setMessageId(Long.valueOf(event.getMessageId()));
         groupMessage.setSenderId(event.getUserId());
-        groupMessage.setPlainText(event.getPlainText());
+        groupMessage.setPlainText(event.getPlainText().trim());
 
         groupMessage.setBySelf(event.getUserId().equals(bot.getSelfId()));
         groupMessage.setIsRecalled(false);
