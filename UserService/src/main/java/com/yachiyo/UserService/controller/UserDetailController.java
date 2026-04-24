@@ -7,6 +7,7 @@ import com.yachiyo.UserService.dto.SelfUserDetailResponse;
 import com.yachiyo.UserService.result.Result;
 import com.yachiyo.UserService.service.UserInteractService;
 import com.yachiyo.UserService.service.UserService;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -79,7 +80,7 @@ public class UserDetailController {
     /**
      * 获取用户详情
      * @param userId 用户ID
-     * @return 是否关注成功
+     * @return 用户详情
      */
     @PostMapping("/detail/user/detail/get")
     public Mono<Result<PublicUserDetailResponse>> getUserDetail(@RequestParam Long userId) {
@@ -99,7 +100,7 @@ public class UserDetailController {
      * 获取用户粉丝列表
      * @return 用户粉丝列表
      */
-    @PostMapping("/detail/user/follower/get")
+    @PostMapping("/detail/user/follow/getFollower")
     public Flux<Result<Long>> getFollowerList(@AuthenticationPrincipal String userId) {
         return userInteractService.getFollowerList(Long.parseLong(userId));
     }
@@ -110,7 +111,7 @@ public class UserDetailController {
      * @return 是否关注成功
      */
     @PostMapping("/detail/user/follow/follow")
-    public Mono<Result<Boolean>> follow(@AuthenticationPrincipal String userId, @RequestParam Long followeeId) {
+    public Mono<Result<Boolean>> follow(@AuthenticationPrincipal @NonNull String userId, @RequestParam @NonNull Long followeeId) {
         return userInteractService.follow(Long.parseLong(userId), followeeId);
     }
 
