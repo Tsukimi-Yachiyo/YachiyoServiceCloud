@@ -9,12 +9,11 @@ from config import config
 from config.nacos import lifespan as nacos_lifespan
 from db import db
 from db.init import init_db
-from redis import redis_client
+from redis_tool import redis_client
 from api import router as api_router
 from service.websocket_service import websocket_manager
 from service.chat_service import ChatService
-from dto import ApiResponse
-
+from dto import Result
 load_dotenv()
 
 
@@ -36,7 +35,7 @@ app.include_router(api_router)
 
 @app.get("/health")
 async def health_check():
-    return ApiResponse(msg="ChatService is running")
+    return Result.success(message="ChatService is running")
 
 
 @app.websocket("/ws/chat/{connection_id}")

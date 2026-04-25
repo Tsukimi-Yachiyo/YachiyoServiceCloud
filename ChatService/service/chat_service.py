@@ -2,7 +2,7 @@ import json
 from typing import List, Optional, Dict
 from datetime import datetime
 from db import db
-from redis import redis_client
+from redis_tool import redis_client
 from dto import MessageItem, ConnectionData
 
 

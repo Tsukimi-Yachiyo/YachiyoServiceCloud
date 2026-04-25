@@ -32,6 +32,13 @@ public interface UserInteractService {
     Flux<Result<Long>> getFollowerList(Long userId);
 
     /**
+     * 获取用户互动详情
+     * @param followeeId 被关注用户ID
+     * @return 用户互动详情
+     */
+    Mono<Result<SearchDetailResponse>> getOnesInteractionDetail(Long followeeId);
+
+    /**
      * 获取用户用户详情
      * @param userId 用户ID
      */

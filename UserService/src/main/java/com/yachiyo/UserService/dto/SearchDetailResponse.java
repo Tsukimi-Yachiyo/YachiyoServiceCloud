@@ -21,6 +21,11 @@ public class SearchDetailResponse {
     private Long followerCount;
 
     /**
+     * 被关注者数
+     */
+    private Long followeeCount;
+
+    /**
      * 是否关注
      */
     private Boolean isFollowing;

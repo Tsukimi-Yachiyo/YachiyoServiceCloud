@@ -13,15 +13,6 @@ import java.util.List;
 @Repository
 public interface FollowLinkRepository extends R2dbcRepository<FollowLink, Long> {
 
-    @Query("""
-        insert into follow_link (
-            follower, followee
-        ) values (
-            :followerId, :followeeId
-        )
-    """)
-    Mono<Integer> insert(FollowLink followLink);
-
     Flux<FollowLink> findByFollowerId(Long userId);
 
     Flux<FollowLink> findByFolloweeId(Long userId);
@@ -31,4 +22,7 @@ public interface FollowLinkRepository extends R2dbcRepository<FollowLink, Long> 
     Mono<Long> countByFolloweeId(Long userId);
 
     Mono<Boolean> deleteByFolloweeIdAndFollowerId(Long userId, Long followeeId);
+
+    Mono<Long> countByFollowerId(Long userId);
+
 }

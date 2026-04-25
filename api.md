@@ -545,7 +545,7 @@ curl -X POST http://localhost:8881/api/v2/user/detail/user/follow/get \
 
 #### 9. 获取用户粉丝列表
 
-**接口**: `POST /detail/user/follower/get`
+**接口**: `POST /detail/user/follow/getFollower`
 
 **需要认证**: 是
 
@@ -1910,10 +1910,7 @@ curl -X GET http://localhost:8881/api/v3/test/hello
 **用例**:
 ```bash
 curl -X GET http://localhost:8892/api/v2/chat/friends \
-  -H "X-User-Id: 1" \
-  -H "X-User-Name: test" \
-  -H "X-User-Role: ROLE_USER" \
-  -H "X-Auth-Token: token"
+  -H "Authorization: Bearer {token}"
 ```
 
 ---
@@ -1948,10 +1945,7 @@ curl -X GET http://localhost:8892/api/v2/chat/friends \
 **用例**:
 ```bash
 curl -X POST http://localhost:8892/api/v2/chat/connection/create \
-  -H "X-User-Id: 1" \
-  -H "X-User-Name: test" \
-  -H "X-User-Role: ROLE_USER" \
-  -H "X-Auth-Token: token" \
+  -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{"to_user_id":10002}'
 ```
@@ -1996,10 +1990,7 @@ curl -X POST http://localhost:8892/api/v2/chat/connection/create \
 **用例**:
 ```bash
 curl -X GET "http://localhost:8892/api/v2/chat/connection/1" \
-  -H "X-User-Id: 1" \
-  -H "X-User-Name: test" \
-  -H "X-User-Role: ROLE_USER" \
-  -H "X-Auth-Token: token"
+  -H "Authorization: Bearer {token}"
 ```
 
 **错误码**:
@@ -2032,10 +2023,7 @@ curl -X GET "http://localhost:8892/api/v2/chat/connection/1" \
 **用例**:
 ```bash
 curl -X GET http://localhost:8892/api/v2/chat/connection/list \
-  -H "X-User-Id: 1" \
-  -H "X-User-Name: test" \
-  -H "X-User-Role: ROLE_USER" \
-  -H "X-Auth-Token: token"
+  -H "Authorization: Bearer {token}"
 ```
 
 ---
@@ -2073,10 +2061,7 @@ curl -X GET http://localhost:8892/api/v2/chat/connection/list \
 **用例**:
 ```bash
 curl -X POST http://localhost:8892/api/v2/chat/message/send \
-  -H "X-User-Id: 1" \
-  -H "X-User-Name: test" \
-  -H "X-User-Role: ROLE_USER" \
-  -H "X-Auth-Token: token" \
+  -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{"connection_id":1,"message":"这是一条消息"}'
 ```
@@ -2119,10 +2104,7 @@ curl -X POST http://localhost:8892/api/v2/chat/message/send \
 **用例**:
 ```bash
 curl -X GET "http://localhost:8892/api/v2/chat/message/receive?connection_id=1&last_timestamp=2026-04-24 13:00:00" \
-  -H "X-User-Id: 1" \
-  -H "X-User-Name: test" \
-  -H "X-User-Role: ROLE_USER" \
-  -H "X-Auth-Token: token"
+  -H "Authorization: Bearer {token}"
 ```
 
 ---
@@ -2158,10 +2140,7 @@ curl -X GET "http://localhost:8892/api/v2/chat/message/receive?connection_id=1&l
 **用例**:
 ```bash
 curl -X GET "http://localhost:8892/api/v2/chat/message/history?connection_id=1&page=1" \
-  -H "X-User-Id: 1" \
-  -H "X-User-Name: test" \
-  -H "X-User-Role: ROLE_USER" \
-  -H "X-Auth-Token: token"
+  -H "Authorization: Bearer {token}"
 ```
 
 ---

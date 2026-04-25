@@ -1,6 +1,7 @@
 package com.yachiyo.UserService.service.Impl;
 
 import com.yachiyo.UserService.client.FileClient;
+import com.yachiyo.UserService.config.FastMethodConfig;
 import com.yachiyo.UserService.dto.PosterDetailResponse;
 import com.yachiyo.UserService.dto.SelfUserDetailResponse;
 import com.yachiyo.UserService.repository.UserDetailRepository;
@@ -31,19 +32,7 @@ public class UserServiceImpl implements UserService {
 
     private static final String AVATAR_PATH_FORMAT = "%d/avatar.jpg";
 
-    // 通用方法：将阻塞的 Feign 调用包装为响应式 Mono，并自动解包 Result
-    private <T> Mono<T> callFileClient(Supplier<Result<T>> feignCall, String errorMsg) {
-        return Mono.fromCallable(feignCall::get)
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(result -> {
-                    if (String.valueOf(HttpStatus.OK.value()).equals(result.getCode()) && result.getData() != null) {
-                        return Mono.just(result.getData());
-                    } else {
-                        log.error("{}: code={}, message={}", errorMsg, result.getCode(), result.getMessage());
-                        return Mono.error(new RuntimeException(errorMsg + ": " + result.getMessage()));
-                    }
-                });
-    }
+    private final FastMethodConfig fastMethodConfig;
 
     private Mono<MultipartFile> filePartToMultipartFile(FilePart filePart) {
         return DataBufferUtils.join(filePart.content())
@@ -139,7 +128,7 @@ public class UserServiceImpl implements UserService {
     public Mono<Result<Boolean>> updateUserAvatar(Long userId, FilePart userAvatar) {
         String filePath = String.format(AVATAR_PATH_FORMAT, userId);
         return filePartToMultipartFile(userAvatar)
-                .flatMap(multipartFile -> callFileClient(
+                .flatMap(multipartFile -> fastMethodConfig.callFileClient(
                         () -> Result.success(fileClient.uploadFile(filePath, multipartFile)),
                         "上传头像失败"
                 ))
@@ -150,7 +139,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public Mono<Result<String>> getUserAvatar(Long userId) {
         String filePath = String.format(AVATAR_PATH_FORMAT, userId);
-        return callFileClient(
+        return fastMethodConfig.callFileClient(
                 () -> Result.success(fileClient.getUrl(filePath, 1000L)),
                 "获取头像URL失败"
         )
@@ -163,7 +152,7 @@ public class UserServiceImpl implements UserService {
         String filePath = String.format(AVATAR_PATH_FORMAT, userId);
         return userDetailRepository.findById(userId)
                 .flatMap(userDetail ->
-                        callFileClient(
+                        fastMethodConfig.callFileClient(
                                 () -> Result.success(fileClient.getUrl(filePath, System.currentTimeMillis())),
                                 "获取头像URL失败"
                         )
