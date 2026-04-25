@@ -145,6 +145,7 @@ public class UserInteractServiceImpl implements UserInteractService {
                     Mono<Boolean> isFollowing = followLinkRepository.existsByFolloweeIdAndFollowerId(userDetail.getUserId(), currentUserId).defaultIfEmpty(false);
                     Mono<Boolean> isFollowed = followLinkRepository.existsByFolloweeIdAndFollowerId(currentUserId, userDetail.getUserId()).defaultIfEmpty(false);
                     Mono<Long> followerCount = followLinkRepository.countByFolloweeId(userDetail.getUserId());
+
                     String filePath = String.format(AVATAR_PATH_FORMAT, userDetail.getUserId());
 
                     // 组合三个 Mono

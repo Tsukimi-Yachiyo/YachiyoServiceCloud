@@ -14,7 +14,6 @@ from api import router as api_router
 from service.websocket_service import websocket_manager
 from service.chat_service import ChatService
 from dto import Result
-
 load_dotenv()
 
 

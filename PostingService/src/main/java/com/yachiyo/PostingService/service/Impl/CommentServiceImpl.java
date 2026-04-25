@@ -54,7 +54,7 @@ public class CommentServiceImpl implements CommentService {
             commentResponse.setUserId(comment.getUserId());
             commentResponses.add(commentResponse);
         }
-        return Result.success(commentResponses.reversed());
+        return Result.success(new ArrayList<>(commentResponses.reversed()));
     }
 
     @Override

@@ -33,9 +33,6 @@ class Result(BaseModel, Generic[T]):
                  result.code, result.message, result.data, result.detail)
 
 
-
-
-
 class CreateConnectionRequest(BaseModel):
     to_user_id: int = Field(..., description="对方用户ID")
 

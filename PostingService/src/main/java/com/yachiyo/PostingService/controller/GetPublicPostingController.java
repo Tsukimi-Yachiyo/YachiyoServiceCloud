@@ -73,4 +73,12 @@ public class GetPublicPostingController {
     public Result<PostEncapsulateResponse> getPostingEncapsulate(@RequestParam Long postingId) {
         return postingService.getPostingEncapsulate(postingId);
     }
+
+    /**
+     * 获取一个用户的帖子
+     */
+    @PostMapping("/user")
+    public Result<List<Long>> getUserPosting(@RequestParam Long userId) {
+        return postingService.getUserPosting(userId);
+    }
 }

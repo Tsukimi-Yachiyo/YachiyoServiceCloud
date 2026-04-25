@@ -60,4 +60,9 @@ public interface PostingService {
      * 获取自己的帖子
      */
     Result<List<SelfPostResponse>> getMyPosting();
+
+    /**
+     * 获取一个用户的帖子
+     */
+    Result<List<Long>> getUserPosting(Long userId);
 }
