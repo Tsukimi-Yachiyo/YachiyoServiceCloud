@@ -6,6 +6,11 @@ import lombok.Data;
 public class SearchDetailResponse {
 
     /**
+     * 用户ID
+     */
+    private Long userId;
+
+    /**
      * 用户名
      */
     private String userName;
@@ -19,6 +24,11 @@ public class SearchDetailResponse {
      * 关注者数
      */
     private Long followerCount;
+
+    /**
+     * 被关注者数
+     */
+    private Long followeeCount;
 
     /**
      * 是否关注

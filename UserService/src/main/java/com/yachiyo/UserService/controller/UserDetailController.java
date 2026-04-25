@@ -125,6 +125,16 @@ public class UserDetailController {
     }
 
     /**
+     * 获取用户互动详情
+     * @param followeeId 被关注用户ID
+     * @return 用户互动详情
+     */
+    @PostMapping("/detail/user/interaction/get")
+    public Mono<Result<SearchDetailResponse>> getInteractionDetail(@RequestParam Long followeeId) {
+        return userInteractService.getOnesInteractionDetail(followeeId);
+    }
+
+    /**
      * 搜索用户
      * @param userName 用户名
      * @return 用户搜索结果
