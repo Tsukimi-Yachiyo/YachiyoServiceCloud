@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 // TODO: 生成回复消息的CQ码
+// TODO: AI自行设置日程表
+// TODO: AI设置下一条想要关注的消息内容（正则表达式）
 public class GroupMessagePlugin {
     @Autowired
     private GroupMessageService groupMessageService;

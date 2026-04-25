@@ -71,11 +71,23 @@ public class CQCodeUtils {
      * @param arrayMsgList CQ 码列表
      * @return 包含所有 at CQ 码中 QQ 号的列表
      */
-    public List<Long> getAtIdList(List<ArrayMsg> arrayMsgList) {
+    public List<String> getAtIdList(List<ArrayMsg> arrayMsgList) {
         return arrayMsgList.stream()
                 .filter(msg -> typeEq(msg, MsgTypeEnum.at))
-                .map(msg -> msg.getLongData("qq"))
+                .map(msg -> msg.getStringData("qq"))
                 .toList();
+    }
+
+    /**
+     * 从 CQ 码列表中筛选出所有 at CQ 码中的 QQ 号，并将其添加到提供的 atList 中
+     * @param arrayMsgList CQ 码列表
+     * @param atList QQ 号的列表
+     */
+    public void computeAtList(List<ArrayMsg> arrayMsgList, List<String> atList) {
+        arrayMsgList.stream()
+                .filter(msg -> typeEq(msg, MsgTypeEnum.at))
+                .map(msg -> msg.getStringData("qq"))
+                .forEach(atList::add);
     }
 
     /**
