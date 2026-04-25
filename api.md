@@ -13,6 +13,7 @@
 - [管理员服务 (AdminService)](#管理员服务-adminservice)
 - [分数服务 (ScoreService)](#分数服务-scoreservice)
 - [工具服务 (ToolService)](#工具服务-toolservice)
+- [聊天服务 (ChatService)](#聊天服务-chatservice)
 
 ---
 
@@ -1884,6 +1885,375 @@ curl -X GET http://localhost:8881/api/v3/test/hello
   "message": "未认证"
 }
 ```
+
+---
+
+## 聊天服务 (ChatService)
+
+基础路径: `/api/v2/chat`
+
+### 1. 获取好友列表
+
+**接口**: `GET /friends`
+
+**需要认证**: 是（通过网关透传的用户信息）
+
+**响应**:
+```json
+{
+  "code": 200,
+  "msg": "成功",
+  "data": [10001, 10002, 10003]
+}
+```
+
+**用例**:
+```bash
+curl -X GET http://localhost:8892/api/v2/chat/friends \
+  -H "X-User-Id: 1" \
+  -H "X-User-Name: test" \
+  -H "X-User-Role: ROLE_USER" \
+  -H "X-Auth-Token: token"
+```
+
+---
+
+### 2. 创建聊天连接
+
+**接口**: `POST /connection/create`
+
+**需要认证**: 是
+
+**请求参数**:
+```json
+{
+  "to_user_id": 10002
+}
+```
+
+**响应**:
+```json
+{
+  "code": 200,
+  "msg": "成功",
+  "data": {
+    "connection_id": 1,
+    "first_user_id": 1,
+    "second_user_id": 10002,
+    "message_list": []
+  }
+}
+```
+
+**用例**:
+```bash
+curl -X POST http://localhost:8892/api/v2/chat/connection/create \
+  -H "X-User-Id: 1" \
+  -H "X-User-Name: test" \
+  -H "X-User-Role: ROLE_USER" \
+  -H "X-Auth-Token: token" \
+  -H "Content-Type: application/json" \
+  -d '{"to_user_id":10002}'
+```
+
+**错误码**:
+- 1002: 非好友不能创建连接
+
+---
+
+### 3. 获取聊天连接详情
+
+**接口**: `GET /connection/{connection_id}`
+
+**需要认证**: 是
+
+**路径参数**:
+- `connection_id`: Long - 连接ID
+
+**响应**:
+```json
+{
+  "code": 200,
+  "msg": "成功",
+  "data": {
+    "connection_id": 1,
+    "first_user_id": 1,
+    "second_user_id": 10002,
+    "message_list": [
+      {
+        "id": 1,
+        "connection_id": 1,
+        "user_id": 1,
+        "user_name": "test",
+        "message": "你好",
+        "create_time": "2026-04-24 13:00:00"
+      }
+    ]
+  }
+}
+```
+
+**用例**:
+```bash
+curl -X GET "http://localhost:8892/api/v2/chat/connection/1" \
+  -H "X-User-Id: 1" \
+  -H "X-User-Name: test" \
+  -H "X-User-Role: ROLE_USER" \
+  -H "X-Auth-Token: token"
+```
+
+**错误码**:
+- 1001: 聊天连接不存在
+
+---
+
+### 4. 获取聊天连接列表
+
+**接口**: `GET /connection/list`
+
+**需要认证**: 是
+
+**响应**:
+```json
+{
+  "code": 200,
+  "msg": "成功",
+  "data": [
+    {
+      "connection_id": 1,
+      "first_user_id": 1,
+      "second_user_id": 10002,
+      "message_list": []
+    }
+  ]
+}
+```
+
+**用例**:
+```bash
+curl -X GET http://localhost:8892/api/v2/chat/connection/list \
+  -H "X-User-Id: 1" \
+  -H "X-User-Name: test" \
+  -H "X-User-Role: ROLE_USER" \
+  -H "X-Auth-Token: token"
+```
+
+---
+
+### 5. 发送消息
+
+**接口**: `POST /message/send`
+
+**需要认证**: 是
+
+**请求参数**:
+```json
+{
+  "connection_id": 1,
+  "message": "这是一条消息"
+}
+```
+
+**响应**:
+```json
+{
+  "code": 200,
+  "msg": "成功",
+  "data": {
+    "id": 1,
+    "connection_id": 1,
+    "user_id": 1,
+    "user_name": "test",
+    "message": "这是一条消息",
+    "create_time": "2026-04-24 13:00:00"
+  }
+}
+```
+
+**用例**:
+```bash
+curl -X POST http://localhost:8892/api/v2/chat/message/send \
+  -H "X-User-Id: 1" \
+  -H "X-User-Name: test" \
+  -H "X-User-Role: ROLE_USER" \
+  -H "X-Auth-Token: token" \
+  -H "Content-Type: application/json" \
+  -d '{"connection_id":1,"message":"这是一条消息"}'
+```
+
+**错误码**:
+- 1001: 聊天连接不存在
+- 1002: 非好友不能发送消息
+- 1003: 消息无效（空或超过1000字符）
+
+---
+
+### 6. 接收新消息
+
+**接口**: `GET /message/receive`
+
+**需要认证**: 是
+
+**请求参数**:
+- `connection_id`: Long (Query 参数)
+- `last_timestamp`: String (Query 参数, 格式: "2026-04-24 13:00:00")
+
+**响应**:
+```json
+{
+  "code": 200,
+  "msg": "成功",
+  "data": [
+    {
+      "id": 2,
+      "connection_id": 1,
+      "user_id": 10002,
+      "user_name": "user2",
+      "message": "收到",
+      "create_time": "2026-04-24 13:01:00"
+    }
+  ]
+}
+```
+
+**用例**:
+```bash
+curl -X GET "http://localhost:8892/api/v2/chat/message/receive?connection_id=1&last_timestamp=2026-04-24 13:00:00" \
+  -H "X-User-Id: 1" \
+  -H "X-User-Name: test" \
+  -H "X-User-Role: ROLE_USER" \
+  -H "X-Auth-Token: token"
+```
+
+---
+
+### 7. 获取历史消息
+
+**接口**: `GET /message/history`
+
+**需要认证**: 是
+
+**请求参数**:
+- `connection_id`: Long (Query 参数)
+- `page`: int (Query 参数, 默认1)
+
+**响应**:
+```json
+{
+  "code": 200,
+  "msg": "成功",
+  "data": [
+    {
+      "id": 1,
+      "connection_id": 1,
+      "user_id": 1,
+      "user_name": "test",
+      "message": "第一条消息",
+      "create_time": "2026-04-24 12:00:00"
+    }
+  ]
+}
+```
+
+**用例**:
+```bash
+curl -X GET "http://localhost:8892/api/v2/chat/message/history?connection_id=1&page=1" \
+  -H "X-User-Id: 1" \
+  -H "X-User-Name: test" \
+  -H "X-User-Role: ROLE_USER" \
+  -H "X-Auth-Token: token"
+```
+
+---
+
+### WebSocket 实时聊天
+
+**连接地址**: `ws://{host}:{port}/ws/chat/{connection_id}?user_id={user_id}&user_name={user_name}`
+
+**连接参数**:
+- `connection_id`: Long - 连接ID (路径参数)
+- `user_id`: Long - 当前用户ID (查询参数)
+- `user_name`: String - 当前用户名 (查询参数, 可选)
+
+---
+
+#### 1. 发送消息
+
+**发送格式**:
+```json
+{
+  "type": "message",
+  "message": "消息内容"
+}
+```
+
+**响应格式**:
+```json
+{
+  "type": "message",
+  "id": 1,
+  "connection_id": 1,
+  "user_id": 1,
+  "user_name": "test",
+  "message": "消息内容",
+  "create_time": "2026-04-24 13:00:00"
+}
+```
+
+---
+
+#### 2. 心跳检测
+
+**发送格式**:
+```json
+{
+  "type": "heartbeat",
+  "user_id": 1
+}
+```
+
+**响应格式**:
+```json
+{
+  "type": "heartbeat_ack",
+  "msg": "连接正常"
+}
+```
+
+**说明**: 建议前端每30秒发送一次心跳，后端会自动更新连接状态
+
+---
+
+### 健康检查
+
+**接口**: `GET /health`
+
+**需要认证**: 否
+
+**响应**:
+```json
+{
+  "code": 200,
+  "msg": "ChatService is running",
+  "data": null
+}
+```
+
+---
+
+### ChatService 错误码说明
+
+| 错误码 | 说明 | 提示信息 |
+|--------|------|----------|
+| 200 | 成功 | 成功 |
+| 400 | 参数错误 | 参数格式错误或缺失，请检查后重试 |
+| 401 | 未登录 | 未登录，缺少认证信息，请重新登录 |
+| 403 | 无权限 | 无权限访问该资源 |
+| 500 | 服务异常 | 服务内部异常，请稍后再试 |
+| 1001 | 连接不存在 | 聊天连接不存在，请重新创建 |
+| 1002 | 非好友 | 非好友不能发送消息，请先添加好友 |
+| 1003 | 消息无效 | 消息不能为空或超过1000字符，请检查消息内容 |
+| 1004 | 微服务调用失败 | 用户服务调用失败，请稍后再试 |
 
 ---
 

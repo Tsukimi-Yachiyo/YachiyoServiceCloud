@@ -339,4 +339,20 @@ public class PostingServiceImpl implements PostingService {
             return Result.error("500","获取自己的帖子失败：",e.getMessage());
         }
     }
+
+    @Override
+    public Result<List<Long>> getUserPosting(Long userId) {
+        try {
+            List<Long> postingIds = postingMapper.selectList(new QueryWrapper<Posting>()
+                            .eq("is_approved", true)
+                            .eq("user_id", userId)
+                            .orderByDesc("id"))
+                    .stream()
+                    .map(Posting::getId)
+                    .toList();
+            return Result.success(postingIds);
+        } catch (Exception e) {
+            return Result.error("500","获取用户帖子失败：",e.getMessage());
+        }
+    }
 }
