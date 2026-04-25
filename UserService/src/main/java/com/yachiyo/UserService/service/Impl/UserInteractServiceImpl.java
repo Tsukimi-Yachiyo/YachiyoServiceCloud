@@ -38,13 +38,16 @@ public class UserInteractServiceImpl implements UserInteractService {
     @Override
     public Mono<Result<Boolean>> follow(Long userId, Long followeeId) {
 
+        if (followeeId.equals(userId)) {
+            return Mono.just(Result.error("400", "不能关注自己", "不能关注自己"));
+        }
+
         FollowLink followLink = new FollowLink();
         followLink.setFollowerId(userId);
         followLink.setFolloweeId(followeeId);
 
-
-        return followLinkRepository.existsFollowLinkByFolloweeIdAndFollowerId(userId, followeeId)
-                .flatMap(exists -> exists ? followLinkRepository.deleteByFolloweeIdAndFollowerId(userId, followeeId) : followLinkRepository.insert(followLink))
+        return followLinkRepository.existsByFolloweeIdAndFollowerId(followeeId, userId)
+                .flatMap(exists -> exists ? followLinkRepository.deleteByFolloweeIdAndFollowerId(followeeId, userId) : followLinkRepository.save(followLink))
                 .map(_ -> Result.success(true))
                 .onErrorResume(error -> Mono.just(Result.error("500", error.getMessage(), "关注失败")));
     }
@@ -124,12 +127,8 @@ public class UserInteractServiceImpl implements UserInteractService {
 
     @Override
     public Mono<Result<Boolean>> getFollowStatus(Long userId, Long followeeId) {
-<<<<<<< Updated upstream
-        return followLinkRepository.existsFollowLinkByFolloweeIdAndFollowerId(userId, followeeId)
-=======
         return followLinkRepository.existsByFolloweeIdAndFollowerId(followeeId, userId)
                 .defaultIfEmpty(false)
->>>>>>> Stashed changes
                 .map(Result::success)
                 .onErrorResume(error -> Mono.just(Result.error("500", error.getMessage(), "获取关注状态失败")));
     }
@@ -143,16 +142,10 @@ public class UserInteractServiceImpl implements UserInteractService {
         return userDetailRepository.findByUserNameContains(userName, PageRequest.of(pageNum - 1, pageSize))
                 .flatMap(userDetail -> {
                     // 并发查询
-<<<<<<< Updated upstream
-                    Mono<Boolean> isFollowing = followLinkRepository.existsFollowLinkByFolloweeIdAndFollowerId(userDetail.getUserId(), currentUserId);
-                    Mono<Boolean> isFollowed = followLinkRepository.existsFollowLinkByFolloweeIdAndFollowerId(currentUserId, userDetail.getUserId());
-                    Mono<Long> followerCount = followLinkRepository.countFollowLinkByFolloweeId(userDetail.getUserId());
-=======
                     Mono<Boolean> isFollowing = followLinkRepository.existsByFolloweeIdAndFollowerId(userDetail.getUserId(), currentUserId).defaultIfEmpty(false);
                     Mono<Boolean> isFollowed = followLinkRepository.existsByFolloweeIdAndFollowerId(currentUserId, userDetail.getUserId()).defaultIfEmpty(false);
                     Mono<Long> followerCount = followLinkRepository.countByFolloweeId(userDetail.getUserId());
                     String filePath = String.format(AVATAR_PATH_FORMAT, userDetail.getUserId());
->>>>>>> Stashed changes
 
                     // 组合三个 Mono
                     return Mono.zip(isFollowing, isFollowed, followerCount)
@@ -180,8 +173,8 @@ public class UserInteractServiceImpl implements UserInteractService {
 
     @Override
     public Mono<Result<Boolean>> isFriend(Long currentUserId, Long followeeId) {
-        Mono<Boolean> isFollowingMono = followLinkRepository.existsFollowLinkByFolloweeIdAndFollowerId(currentUserId, followeeId);
-        Mono<Boolean> isFollowedMono = followLinkRepository.existsFollowLinkByFolloweeIdAndFollowerId(followeeId, currentUserId);
+        Mono<Boolean> isFollowingMono = followLinkRepository.existsByFolloweeIdAndFollowerId(currentUserId, followeeId).defaultIfEmpty(false);
+        Mono<Boolean> isFollowedMono = followLinkRepository.existsByFolloweeIdAndFollowerId(followeeId, currentUserId).defaultIfEmpty(false);
 
         return Mono.zip(isFollowingMono, isFollowedMono)
                 .map(tuple -> {
@@ -197,7 +190,7 @@ public class UserInteractServiceImpl implements UserInteractService {
         return getFolloweeList(currentUserId)
                 .map(Result::getData)
                 .flatMap(
-                followeeId -> followLinkRepository.existsFollowLinkByFolloweeIdAndFollowerId(currentUserId, followeeId)
+                followeeId -> followLinkRepository.existsByFolloweeIdAndFollowerId(currentUserId, followeeId).defaultIfEmpty(false)
                         .filter(Boolean::booleanValue)
                         .thenReturn(Result.success(followeeId))
                         .onErrorResume(error -> Mono.just(Result.error("500", error.getMessage(), "获取关注状态失败")))

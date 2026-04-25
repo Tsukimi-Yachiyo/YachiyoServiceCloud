@@ -6,11 +6,6 @@ import lombok.Data;
 public class SearchDetailResponse {
 
     /**
-     * 用户ID
-     */
-    private Long userId;
-
-    /**
      * 用户名
      */
     private String userName;
