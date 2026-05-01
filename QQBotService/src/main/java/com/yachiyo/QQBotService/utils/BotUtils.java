@@ -2,6 +2,7 @@ package com.yachiyo.QQBotService.utils;
 
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotContainer;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,10 +14,14 @@ import java.util.Collection;
 @Component
 public class BotUtils {
     @Value("${bot.yachiyo.self-id}")
+    @Getter
     private Long botId;
 
     @Autowired
     private BotContainer botContainer;
+
+    @Autowired
+    private CQCodeUtils cqCodeUtils;
 
     public Bot getBot() {
         return getBot(botId);

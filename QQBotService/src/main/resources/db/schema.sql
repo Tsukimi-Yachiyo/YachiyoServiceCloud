@@ -44,3 +44,10 @@ CREATE TABLE IF NOT EXISTS forward_messages (
     message_list JSON NOT NULL COMMENT '包含的消息列表',
     has_child BOOLEAN DEFAULT FALSE COMMENT '是否包含嵌套的合并转发消息'
 );
+
+-- 抽签表
+CREATE TABLE IF NOT EXISTS fortunes (
+     qq BIGINT PRIMARY KEY COMMENT '抽签者QQ号',
+     date DATE DEFAULT (CURRENT_DATE) COMMENT '抽签日期',
+     result INT COMMENT '抽签结果'
+);

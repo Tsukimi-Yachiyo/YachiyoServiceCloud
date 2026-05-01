@@ -8,10 +8,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class GroupPromptReq {
-    private String userPrompt; // 用户输入的消息内容
+public class GroupChatReq {
     private Long groupId; // 消息来源群ID
-    private Long senderId; // 消息来源用户ID
+    private Integer messageId; // 消息ID
     private RequestReason requestReason; // 请求原因
 //    private CallType callType; // 调用类型
 }

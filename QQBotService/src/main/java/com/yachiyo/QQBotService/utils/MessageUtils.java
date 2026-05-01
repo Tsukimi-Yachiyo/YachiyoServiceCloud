@@ -1,168 +1,29 @@
 package com.yachiyo.QQBotService.utils;
 
-import com.mikuac.shiro.common.utils.JsonUtils;
+import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.dto.event.message.MessageEvent;
-import com.mikuac.shiro.enums.MsgTypeEnum;
-import com.mikuac.shiro.model.ArrayMsg;
-import com.yachiyo.QQBotService.dto.FormattedMessage;
-import com.yachiyo.QQBotService.dto.UploadFileRequest;
-import com.yachiyo.QQBotService.service.FileService;
-import lombok.extern.slf4j.Slf4j;
+import com.yachiyo.QQBotService.dto.ai.AtMatcher;
+import com.yachiyo.QQBotService.dto.ai.MessageMatcher;
+import com.yachiyo.QQBotService.enums.CQMatchRule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.JsonNode;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * 格式化消息，在保持结构的前提下使其更精简、更适合被AI模型处理
- */
-@Slf4j
 @Component
 public class MessageUtils {
     @Autowired
-    private FileService fileService;
+    private CQCodeUtils cqCodeUtils;
 
-    @Autowired
-    private CQCodeUtils CQCodeUtils;
+    public boolean messageMatch(Bot bot, MessageMatcher messageMatcher, MessageEvent event) {
+        String plainText = event.getPlainText();
+        String plainTextRegex = messageMatcher.getPlainTextRegex();
+        boolean isPlainTextMatch = plainTextRegex == null || plainTextRegex.isBlank() || plainText.matches(messageMatcher.getPlainTextRegex());
 
-    public FormattedMessage format(MessageEvent event) {
-        List<ArrayMsg> arrayMsgList = event.getArrayMsg();
-        StringBuilder sb = new StringBuilder();
+        AtMatcher atMatcher = messageMatcher.getAtMatcher();
+        boolean isAtMatch = atMatcher == null || atMatcher.matches(bot.getSelfId(), cqCodeUtils.getAtIdList(event.getArrayMsg()));
 
-        List<String> atList = new ArrayList<>();
-        List<String> fileNames = this.uploadFilesForName(arrayMsgList);
-        List<String> relevantUrls = new ArrayList<>();
-        for (ArrayMsg arrayMsg : arrayMsgList) {
-            switch (arrayMsg.getType()) {
-                case MsgTypeEnum.text -> sb.append(arrayMsg.getStringData("text"));
-                case MsgTypeEnum.at -> sb.append(formatAt(arrayMsg, atList));
-                case MsgTypeEnum.reply -> sb.append(formatReply(arrayMsg));
-                case MsgTypeEnum.forward -> sb.append(formatForward(arrayMsg));
-                case MsgTypeEnum.image -> sb.append(formatImage(arrayMsg));
-                case MsgTypeEnum.video -> sb.append(formatVideo(arrayMsg));
-                case MsgTypeEnum.record -> sb.append(formatRecord(arrayMsg));
-                case MsgTypeEnum.dice -> sb.append(formatDice(arrayMsg));
-                case MsgTypeEnum.rps -> sb.append(formatRps(arrayMsg));
-                case MsgTypeEnum.face -> sb.append(formatFace(arrayMsg));
-                case MsgTypeEnum.json -> sb.append(formatJson(arrayMsg, relevantUrls));
-                default -> log.warn("未支持的CQ码类型，已跳过：{}", arrayMsg.getRawType());
-            }
-            if (CQCodeUtils.typeEq(arrayMsg, "file")) {
-                sb.append(formatFile(arrayMsg));
-            }
-            sb.append(" "); // 添加空格以分隔CQ码
-        }
+        CQMatchRule cqMatchRule = messageMatcher.getCqMatchRule();
+        boolean isCQMatch = cqMatchRule == null || cqMatchRule.matches(event.getArrayMsg(), cqCodeUtils);
 
-        return new FormattedMessage(sb.toString().trim(), atList, fileNames, relevantUrls);
-    }
-
-    public String formatAt(ArrayMsg arrayMsg, List<String> atList) {
-        if (!CQCodeUtils.typeEq(arrayMsg, MsgTypeEnum.at)) return "";
-        String atDetail = arrayMsg.getStringData("qq");
-        atList.add(atDetail);
-        return "AT:" + atDetail;
-    }
-
-    public String formatReply(ArrayMsg arrayMsg) {
-        if (!CQCodeUtils.typeEq(arrayMsg, MsgTypeEnum.reply)) return "";
-        return "REPLY:" + arrayMsg.getLongData("id");
-    }
-
-    public String formatForward(ArrayMsg arrayMsg) {
-        if (!CQCodeUtils.typeEq(arrayMsg, MsgTypeEnum.forward)) return "";
-        return "FORWARD:" + arrayMsg.getLongData("id");
-    }
-
-    /**
-     * 格式化图片或动画表情
-     * @param arrayMsg CQ码
-     * @return 格式化结果
-     */
-    public String formatImage(ArrayMsg arrayMsg) {
-        if (!CQCodeUtils.typeEq(arrayMsg, MsgTypeEnum.image)) return "";
-        if (!CQCodeUtils.isNormalImage(arrayMsg)) {
-            return "STICKER" + cleaningSummary(arrayMsg.getStringData("summary"));
-        }
-        return "IMAGE";
-    }
-
-    public String formatVideo(ArrayMsg arrayMsg) {
-        if (!CQCodeUtils.typeEq(arrayMsg, MsgTypeEnum.video)) return "";
-        return "VIDEO";
-    }
-
-    public String formatRecord(ArrayMsg arrayMsg) {
-        if (!CQCodeUtils.typeEq(arrayMsg, MsgTypeEnum.record)) return "";
-        return "RECORD";
-    }
-
-    public String formatFile(ArrayMsg arrayMsg) {
-        if (!CQCodeUtils.typeEq(arrayMsg, "file")) return "";
-        return "FILE";
-    }
-
-    public String formatDice(ArrayMsg arrayMsg) {
-        if (!CQCodeUtils.typeEq(arrayMsg, MsgTypeEnum.dice)) return "";
-        return "DICE:" + arrayMsg.getStringData("result");
-    }
-
-    public String formatRps(ArrayMsg arrayMsg) {
-        if (!CQCodeUtils.typeEq(arrayMsg, MsgTypeEnum.rps)) return "";
-        return "RPS:" + arrayMsg.getStringData("result");
-    }
-
-    public String formatFace(ArrayMsg arrayMsg) {
-        if (!CQCodeUtils.typeEq(arrayMsg, MsgTypeEnum.face)) return "";
-        return "FACE:" + arrayMsg.getStringData("id");
-    }
-
-    public String formatJson(ArrayMsg arrayMsg, List<String> relevantUrls) {
-        JsonNode root = arrayMsg.getData();
-        // 我也不知道为什么data字段用字符串存了整个JSON对象，反正就是这样了
-        String dataStr = root.path("data").asString();
-        JsonNode data = JsonUtils.parseToJsonNode(dataStr);
-        JsonNode news = data.path("meta").path("news");
-
-        String tag = news.path("tag").asString();
-        String title = news.path("title").asString();
-
-        String jumpUrl = news.path("jumpUrl").asString();
-        relevantUrls.add(jumpUrl);
-
-        return "JSON:" + tag + ":" + title;
-    }
-
-    /**
-     * 清理动画表情的摘要内容，去掉无用的部分
-     * @param summary 表情的summary字段
-     * @return 清理后的字符串，默认摘要或者空摘要会被删除
-     */
-    private String cleaningSummary(String summary) {
-        String ret = summary
-                .replace("&#91;", "")
-                .replace("&#93;", "")
-                .replace("[", "")
-                .replace("]", "")
-                ;
-        if ("动画表情".equals(ret) || ret.isBlank()) {
-            return "";
-        } else {
-            return ":" + ret;
-        }
-    }
-
-    /**
-     * 解析CQ码，下载其中包含的文件（如图片、语音、视频等），上传到MinIO，并返回新的文件名列表
-     * @param arrayMsgList CQ码列表
-     * @return 上传后的文件名列表，若消息中不包含可下载的CQ码或上传失败则返回空列表
-     */
-    private List<String> uploadFilesForName(List<ArrayMsg> arrayMsgList) {
-        // 1. 解析CQ码中的可下载内容（如图片、语音、视频等），获取它们的URL和文件名
-        List<UploadFileRequest> uploadFileList = CQCodeUtils.getUploadFileList(arrayMsgList);
-        // 2. 下载这些内容并上传到MinIO，获取其新的文件名
-        // 3. 将已保存的文件名列表保存到数据库
-        return fileService.uploadFiles(uploadFileList).getData();
+        return isPlainTextMatch && isAtMatch && isCQMatch;
     }
 }

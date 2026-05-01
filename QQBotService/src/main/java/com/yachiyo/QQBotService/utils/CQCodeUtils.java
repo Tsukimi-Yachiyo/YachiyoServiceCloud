@@ -55,6 +55,23 @@ public class CQCodeUtils {
         return typeEq(msg, MsgTypeEnum.at) && msg.getLongData("qq") == userId;
     }
 
+    public boolean atEq(List<ArrayMsg> arrayMsgList, Long userId) {
+        return arrayMsgList.stream().anyMatch(msg -> atEq(msg, userId));
+    }
+
+    /**
+     * 从 CQ 码列表中查找回复的消息的id，若没有则返回 null
+     * @param arrayMsgList CQ 码列表
+     * @return 回复的消息的id或null
+     */
+    public Integer findReplyId(List<ArrayMsg> arrayMsgList) {
+        return arrayMsgList.stream()
+                .filter(msg -> typeEq(msg, MsgTypeEnum.reply))
+                .map(msg -> (int) msg.getLongData("id")) // 消息id就是int类型的
+                .findFirst()
+                .orElse(null);
+    }
+
     /**
      * 从 CQ 码列表中筛选出所有的 at CQ 码
      * @param arrayMsgList CQ 码列表
@@ -67,9 +84,9 @@ public class CQCodeUtils {
     }
 
     /**
-     * 从 CQ 码列表中筛选出所有 at CQ 码中的 QQ 号
+     * 从 CQ 码列表中筛选出所有 at CQ 码中的 QQ 号或 all
      * @param arrayMsgList CQ 码列表
-     * @return 包含所有 at CQ 码中 QQ 号的列表
+     * @return 包含所有 at CQ 码中 QQ 号或 all 的列表
      */
     public List<String> getAtIdList(List<ArrayMsg> arrayMsgList) {
         return arrayMsgList.stream()
@@ -193,7 +210,15 @@ public class CQCodeUtils {
      * @return CQ 码是否是可下载的类型
      */
     public boolean isDownloadableType(ArrayMsg arrayMsg) {
-        if (typeEq(arrayMsg, MsgTypeEnum.record, MsgTypeEnum.video, MsgTypeEnum.image)) return true;
-        return typeEq(arrayMsg, "file");
+        return isFileLike(arrayMsg) || typeEq(arrayMsg, MsgTypeEnum.record);
+    }
+
+    /**
+     * 判断 CQ 码是否是文件类消息（包括图片、视频、文件）
+     * @param arrayMsg 要判断的 CQ 码
+     * @return CQ 码是否是文件类消息
+     */
+    public boolean isFileLike(ArrayMsg arrayMsg) {
+        return typeEq(arrayMsg, MsgTypeEnum.video, MsgTypeEnum.image) || typeEq(arrayMsg, "file");
     }
 }
