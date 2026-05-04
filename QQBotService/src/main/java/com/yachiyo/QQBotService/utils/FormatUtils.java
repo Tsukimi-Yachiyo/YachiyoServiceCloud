@@ -5,7 +5,6 @@ import com.mikuac.shiro.dto.event.message.MessageEvent;
 import com.mikuac.shiro.enums.MsgTypeEnum;
 import com.mikuac.shiro.model.ArrayMsg;
 import com.yachiyo.QQBotService.dto.FormattedMessage;
-import com.yachiyo.QQBotService.dto.UploadFileRequest;
 import com.yachiyo.QQBotService.entity.GroupMessage;
 import com.yachiyo.QQBotService.service.FileService;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +43,6 @@ public class FormatUtils {
         StringBuilder sb = new StringBuilder();
 
         List<String> atList = new ArrayList<>();
-        List<String> fileNames = this.uploadFilesForName(arrayMsgList);
         List<String> relevantUrls = new ArrayList<>();
         for (ArrayMsg arrayMsg : arrayMsgList) {
             switch (arrayMsg.getType()) {
@@ -67,7 +65,8 @@ public class FormatUtils {
             sb.append(" "); // 添加空格以分隔CQ码
         }
 
-        return new FormattedMessage(sb.toString().trim(), atList, fileNames, relevantUrls);
+        // 文件上传单独处理，这里传个null
+        return new FormattedMessage(sb.toString().trim(), atList, null, relevantUrls);
     }
 
     public String formatAt(ArrayMsg arrayMsg, List<String> atList) {
@@ -163,18 +162,5 @@ public class FormatUtils {
         } else {
             return ":" + ret;
         }
-    }
-
-    /**
-     * 解析CQ码，下载其中包含的文件（如图片、语音、视频等），上传到MinIO，并返回新的文件名列表
-     * @param arrayMsgList CQ码列表
-     * @return 上传后的文件名列表，若消息中不包含可下载的CQ码或上传失败则返回空列表
-     */
-    private List<String> uploadFilesForName(List<ArrayMsg> arrayMsgList) {
-        // 1. 解析CQ码中的可下载内容（如图片、语音、视频等），获取它们的URL和文件名
-        List<UploadFileRequest> uploadFileList = CQCodeUtils.getUploadFileList(arrayMsgList);
-        // 2. 下载这些内容并上传到MinIO，获取其新的文件名
-        // 3. 将已保存的文件名列表保存到数据库
-        return fileService.uploadFiles(uploadFileList).getData();
     }
 }

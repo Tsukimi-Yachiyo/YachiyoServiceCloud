@@ -8,6 +8,8 @@ import com.yachiyo.QQBotService.result.Result;
 import java.util.List;
 
 public interface OneBotService {
+//    Result<Integer> getLatestId(Bot bot, Long groupId);
+//    Result<List<Integer>> getId(Bot bot, Long groupId, Integer size);
     /**
      * 获取指定群的最新一条消息
      * @param bot Bot实例
@@ -40,4 +42,13 @@ public interface OneBotService {
      * @return 成功时返回消息ID
      */
     Result<Integer> send(Bot bot, GroupMessageReq groupMessageReq);
+
+    /**
+     * 发送消息到指定群，自动解析CQ码
+     * @param bot Bot实例
+     * @param groupId 群号
+     * @param message 消息内容，支持CQ码
+     * @return 成功时返回消息ID
+     */
+    Result<Integer> send(Bot bot, Long groupId, String message);
 }

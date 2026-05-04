@@ -23,7 +23,7 @@ public class GroupMessage {
     private Long groupId; // 群号
 
     @TableField("message_id")
-    private Long messageId; // NapCat 消息ID
+    private Integer messageId; // NapCat 消息ID
 
     @TableField("sender_id")
     private Long senderId; // 发送者QQ号

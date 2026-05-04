@@ -4,7 +4,7 @@ import com.yachiyo.QQBotService.dto.GroupMessageReq;
 import com.yachiyo.QQBotService.dto.GroupMessageResp;
 import com.yachiyo.QQBotService.result.Result;
 import com.yachiyo.QQBotService.service.OneBotService;
-import com.yachiyo.QQBotService.utils.BotUtils;
+import com.yachiyo.QQBotService.utils.NapCatUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,14 +14,29 @@ import java.util.List;
 @RequestMapping("/api/v1/group")
 @RequiredArgsConstructor
 public class GroupMessageController {
-    private final BotUtils botUtils;
+    private final NapCatUtils napCatUtils;
     private final OneBotService oneBotService;
+
+//    @GetMapping("/latest/id")
+//    public Result<Integer> getLastestMessageId(
+//            @RequestParam("groupId") Long groupId
+//    ) {
+//        return oneBotService.getLatestId(napCatUtils.getBot(), groupId);
+//    }
+//
+//    @GetMapping("/get/id")
+//    public Result<List<Integer>> getMessageId(
+//            @RequestParam("groupId") Long groupId,
+//            @RequestParam("size") Integer size
+//    ) {
+//        return oneBotService.getId(napCatUtils.getBot(), groupId, size);
+//    }
 
     @GetMapping("/latest")
     public Result<GroupMessageResp> getLastest(
             @RequestParam("groupId") Long groupId
     ) {
-        return oneBotService.getLatest(botUtils.getBot(), groupId);
+        return oneBotService.getLatest(napCatUtils.getBot(), groupId);
     }
 
     @GetMapping("/get")
@@ -29,14 +44,14 @@ public class GroupMessageController {
             @RequestParam("groupId") Long groupId,
             @RequestParam("size") Integer size
     ) {
-        return oneBotService.get(botUtils.getBot(), groupId, size);
+        return oneBotService.get(napCatUtils.getBot(), groupId, size);
     }
 
     @GetMapping("/get")
     public Result<GroupMessageResp> get(
             @RequestParam("messageId") Integer messageId
     ) {
-        return oneBotService.get(botUtils.getBot(), messageId);
+        return oneBotService.get(napCatUtils.getBot(), messageId);
     }
 
     /**
@@ -48,6 +63,6 @@ public class GroupMessageController {
     public Result<Integer> sendMessage(
             @RequestBody GroupMessageReq groupMessageReq
     ) {
-        return oneBotService.send(botUtils.getBot(), groupMessageReq);
+        return oneBotService.send(napCatUtils.getBot(), groupMessageReq);
     }
 }

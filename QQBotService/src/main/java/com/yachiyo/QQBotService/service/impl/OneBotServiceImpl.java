@@ -88,10 +88,15 @@ public class OneBotServiceImpl implements OneBotService {
 
     @Override
     public Result<Integer> send(Bot bot, GroupMessageReq groupMessageReq) {
+        return this.send(bot, groupMessageReq.getGroupId(), groupMessageReq.getMessage());
+    }
+
+    @Override
+    public Result<Integer> send(Bot bot, Long groupId, String message) {
         try {
-            int msgId = bot.sendGroupMsg(groupMessageReq.getGroupId(), groupMessageReq.getMessage(), false).getData().getMessageId();
+            int msgId = bot.sendGroupMsg(groupId, message, false).getData().getMessageId();
             MsgResp msgResp = bot.getMsg(msgId).getData();
-            groupMessageService.onSendMessage(groupMessageService.computeGroupMessage(bot, msgResp, groupMessageReq.getGroupId(), msgId));
+            groupMessageService.onSendMessage(bot, msgResp, groupId, msgId);
             return Result.success(msgId);
         } catch (Exception e) {
             return Result.error("发送消息失败: " + e.getMessage(), null);

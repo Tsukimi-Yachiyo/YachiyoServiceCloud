@@ -8,10 +8,12 @@ import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotPlugin;
 import com.mikuac.shiro.dto.event.message.GroupMessageEvent;
 import com.mikuac.shiro.enums.AtEnum;
+import com.yachiyo.QQBotService.dto.GroupMessageReq;
 import com.yachiyo.QQBotService.plugin.feature.Feature;
 import com.yachiyo.QQBotService.plugin.feature.FeatureCategory;
 import com.yachiyo.QQBotService.plugin.feature.FeatureRegistry;
 import com.yachiyo.QQBotService.service.GameService;
+import com.yachiyo.QQBotService.service.OneBotService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +24,9 @@ public class GamePlugin {
 
     @Autowired
     private GameService gameService;
+
+    @Autowired
+    private OneBotService oneBotService;
 
     public GamePlugin() {
         FeatureRegistry.register(FeatureCategory.GAME, new Feature("/抽签"));
@@ -38,7 +43,7 @@ public class GamePlugin {
                 .text("\n（结果纯属娱乐，切勿迷信~）")
                 .face(66)
                 .build();
-        bot.sendGroupMsg(event.getGroupId(), msg, false);
+        oneBotService.send(bot, event.getGroupId(), msg);
         return BotPlugin.MESSAGE_IGNORE;
     }
 }

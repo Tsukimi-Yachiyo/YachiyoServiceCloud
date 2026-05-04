@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.dto.action.response.MsgResp;
 import com.mikuac.shiro.dto.event.message.GroupMessageEvent;
+import com.mikuac.shiro.dto.event.message.MessageEvent;
 import com.mikuac.shiro.model.ArrayMsg;
+import com.yachiyo.QQBotService.dto.FormattedMessage;
 import com.yachiyo.QQBotService.dto.GroupMessageResp;
 import com.yachiyo.QQBotService.entity.ChatGroup;
 import com.yachiyo.QQBotService.entity.ForwardMessage;
@@ -13,6 +15,7 @@ import com.yachiyo.QQBotService.mapper.ChatGroupMapper;
 import com.yachiyo.QQBotService.mapper.ForwardMessageMapper;
 import com.yachiyo.QQBotService.mapper.MessageMapper;
 import com.yachiyo.QQBotService.result.Result;
+import com.yachiyo.QQBotService.service.FileService;
 import com.yachiyo.QQBotService.service.GroupMessageService;
 import com.yachiyo.QQBotService.utils.CQCodeUtils;
 import com.yachiyo.QQBotService.utils.FormatUtils;
@@ -43,8 +46,42 @@ public class GroupMessageServiceImpl implements GroupMessageService {
     @Autowired
     private FormatUtils formatUtils;
 
+    @Autowired
+    private FileService fileService;
+
     @Override
-    public Result<Boolean> onSendMessage(GroupMessage groupMessage) {
+    public Result<Boolean> onSendMessage(Bot bot, MessageEvent messageEvent, long groupId, int messageId) {
+        GroupMessage groupMessage = computeGroupMessage(bot, messageEvent, groupId, messageId);
+
+        List<String> fileNames = new ArrayList<>();
+        try {
+            fileNames.addAll(fileService.uploadFiles(CQCodeUtils.getUploadFileRequestList(messageEvent.getArrayMsg())).getData()) ;
+        } catch (Exception e) {
+            return Result.error("文件上传失败: " + e.getMessage(), null);
+        } finally {
+            groupMessage.setFileNames(fileNames);
+        }
+
+        return saveMessage(groupMessage);
+    }
+
+    @Override
+    public Result<Boolean> onSendMessage(Bot bot, GroupMessageEvent event) {
+        GroupMessage groupMessage = computeGroupMessage(bot, event);
+
+        List<String> fileNames = new ArrayList<>();
+        try {
+            fileNames.addAll(fileService.uploadFiles(CQCodeUtils.getUploadFileRequestList(event.getArrayMsg())).getData()) ;
+        } catch (Exception e) {
+            return Result.error("文件上传失败: " + e.getMessage(), null);
+        } finally {
+            groupMessage.setFileNames(fileNames);
+        }
+
+        return saveMessage(groupMessage);
+    }
+
+    private Result<Boolean> saveMessage(GroupMessage groupMessage) {
         try {
             if (chatGroupMapper.selectById(groupMessage.getGroupId()) == null) {
                 ChatGroup chatGroup = new ChatGroup();
@@ -83,52 +120,65 @@ public class GroupMessageServiceImpl implements GroupMessageService {
         }
     }
 
-    @Override
-    public GroupMessage computeGroupMessage(Bot bot, GroupMessageEvent event) {
-        GroupMessage groupMessage = new GroupMessage();
-
-        groupMessage.setGroupId(event.getGroupId());
-        groupMessage.setSendTime(unixUtils.ofSecond(event.getTime()));
-        groupMessage.setMessageId(Long.valueOf(event.getMessageId()));
-        groupMessage.setSenderId(event.getUserId());
-        groupMessage.setPlainText(event.getPlainText().trim());
-
-        groupMessage.setBySelf(event.getUserId().equals(bot.getSelfId()));
-        groupMessage.setIsRecalled(false);
-
-        var formattedMessage = formatUtils.format(event);
-        groupMessage.setAtList(formattedMessage.getAtList());
-        groupMessage.setFileNames(formattedMessage.getFileNames());
-        groupMessage.setPromptText(formattedMessage.getPromptText());
-        groupMessage.setRelevantUrls(formattedMessage.getRelevantUrls());
-
-        saveForwardMessage(bot, event.getArrayMsg(), event.getMessageId());
-
-        return groupMessage;
+    private GroupMessage computeGroupMessage(Bot bot, GroupMessageEvent event) {
+        return computeGroupMessage(
+                bot, event.getGroupId(),
+                event.getTime(), event.getMessageId(),
+                event.getUserId(), event.getPlainText(),
+                event.getArrayMsg(),
+                formatUtils.format(event)
+        );
     }
 
-    @Override
-    public GroupMessage computeGroupMessage(Bot bot, MsgResp msgResp, long groupId, int messageId) {
+    private GroupMessage computeGroupMessage(Bot bot, MessageEvent messageEvent, long groupId, int messageId) {
+        return computeGroupMessage(
+                bot, groupId,
+                messageEvent.getTime(), messageId,
+                messageEvent.getUserId(), messageEvent.getPlainText(),
+                messageEvent.getArrayMsg(),
+                formatUtils.format(messageEvent)
+        );
+    }
+
+    /**
+     * 计算GroupMessage对象
+     * @param bot 机器人实例
+     * @param groupId 群号
+     * @param timeSeconds 消息发送时间，单位为秒
+     * @param messageId 消息ID
+     * @param senderId 发送者QQ号
+     * @param plainText 消息纯文本内容
+     * @param arrayMsgList 消息中的CQ码列表
+     * @param formattedMessage 格式化消息
+     * @return GroupMessage对象
+     */
+    private GroupMessage computeGroupMessage(
+            Bot bot, Long groupId,
+            Long timeSeconds, Integer messageId,
+            Long senderId, String plainText,
+            List<ArrayMsg> arrayMsgList,
+            FormattedMessage formattedMessage
+    ) {
         GroupMessage groupMessage = new GroupMessage();
 
         groupMessage.setGroupId(groupId);
-        groupMessage.setSendTime(unixUtils.ofSecond(msgResp.getTime()));
-        groupMessage.setMessageId((long) messageId);
-        groupMessage.setSenderId(msgResp.getUserId());
-        groupMessage.setPlainText(msgResp.getPlainText().trim());
+        groupMessage.setSendTime(unixUtils.ofSecond(timeSeconds));
+        groupMessage.setMessageId(messageId);
+        groupMessage.setSenderId(senderId);
+        groupMessage.setPlainText(plainText.trim());
 
-        groupMessage.setBySelf(msgResp.getUserId().equals(bot.getSelfId()));
+        groupMessage.setBySelf(senderId.equals(bot.getSelfId()));
         groupMessage.setIsRecalled(false);
 
-        var formattedMessage = formatUtils.format(msgResp);
         groupMessage.setAtList(formattedMessage.getAtList());
         groupMessage.setFileNames(formattedMessage.getFileNames());
         groupMessage.setPromptText(formattedMessage.getPromptText());
         groupMessage.setRelevantUrls(formattedMessage.getRelevantUrls());
 
-        saveForwardMessage(bot, msgResp.getArrayMsg(), messageId);
+        saveForwardMessage(bot, arrayMsgList, messageId);
 
         return groupMessage;
+
     }
 
     @Override

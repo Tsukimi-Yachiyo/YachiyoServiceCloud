@@ -3,17 +3,19 @@ package com.yachiyo.QQBotService.service.impl;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.dto.event.message.GroupMessageEvent;
+import com.mikuac.shiro.dto.event.message.MessageEvent;
 import com.yachiyo.QQBotService.client.AIClient;
 import com.yachiyo.QQBotService.dto.GroupMessageReq;
+import com.yachiyo.QQBotService.dto.ai.AtMatcher;
 import com.yachiyo.QQBotService.dto.ai.GroupChatReq;
 import com.yachiyo.QQBotService.dto.ai.GroupChatResp;
 import com.yachiyo.QQBotService.dto.ai.MessageMatcher;
+import com.yachiyo.QQBotService.enums.CQMatchRule;
 import com.yachiyo.QQBotService.enums.RequestReason;
 import com.yachiyo.QQBotService.result.Result;
 import com.yachiyo.QQBotService.service.GroupAIChatService;
 import com.yachiyo.QQBotService.service.OneBotService;
 import com.yachiyo.QQBotService.utils.CQCodeUtils;
-import com.yachiyo.QQBotService.utils.MessageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -24,9 +26,6 @@ import java.util.concurrent.TimeUnit;
 public class GroupAIChatServiceImpl implements GroupAIChatService {
     @Autowired
     private AIClient aiClient;
-
-    @Autowired
-    private MessageUtils messageUtils;
 
     @Autowired
     private CQCodeUtils cqCodeUtils;
@@ -49,7 +48,7 @@ public class GroupAIChatServiceImpl implements GroupAIChatService {
 
         // 没有被AT，进入消息匹配
         MessageMatcher messageMatcher = redisTemplate.opsForValue().getAndDelete(String.format(MESSAGE_MATCHER_KEY, event.getGroupId(), event.getMessageId()));
-        if (messageMatcher != null && messageUtils.messageMatch(bot, messageMatcher, event)) {
+        if (messageMatcher != null && this.messageMatch(bot, messageMatcher, event)) {
             return handleWithReason(bot, event, RequestReason.MESSAGE_MATCHER);
         }
 
@@ -93,5 +92,19 @@ public class GroupAIChatServiceImpl implements GroupAIChatService {
         request.setRequestReason(requestReason);
 
         return request;
+    }
+
+    private boolean messageMatch(Bot bot, MessageMatcher messageMatcher, MessageEvent event) {
+        String plainText = event.getPlainText();
+        String plainTextRegex = messageMatcher.getPlainTextRegex();
+        boolean isPlainTextMatch = plainTextRegex == null || plainTextRegex.isBlank() || plainText.matches(messageMatcher.getPlainTextRegex());
+
+        AtMatcher atMatcher = messageMatcher.getAtMatcher();
+        boolean isAtMatch = atMatcher == null || atMatcher.matches(bot.getSelfId(), cqCodeUtils.getAtIdList(event.getArrayMsg()));
+
+        CQMatchRule cqMatchRule = messageMatcher.getCqMatchRule();
+        boolean isCQMatch = cqMatchRule == null || cqMatchRule.matches(event.getArrayMsg(), cqCodeUtils);
+
+        return isPlainTextMatch && isAtMatch && isCQMatch;
     }
 }

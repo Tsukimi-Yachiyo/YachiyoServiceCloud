@@ -7,14 +7,20 @@ import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.core.BotPlugin;
 import com.mikuac.shiro.dto.event.message.AnyMessageEvent;
 import com.mikuac.shiro.enums.AtEnum;
+import com.yachiyo.QQBotService.dto.GroupMessageReq;
 import com.yachiyo.QQBotService.plugin.feature.FeatureCategory;
 import com.yachiyo.QQBotService.plugin.feature.FeatureRegistry;
+import com.yachiyo.QQBotService.service.OneBotService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Shiro
 @Component
 public class FeaturePlugin {
     public static final String CMD_FUNCTION = "^\\s*/功能\\s*$";
+
+    @Autowired
+    private OneBotService oneBotService;
 
     @GroupMessageHandler
     @MessageHandlerFilter(at = AtEnum.NEED, cmd = CMD_FUNCTION)
@@ -30,7 +36,7 @@ public class FeaturePlugin {
                 sb.append(feature.getDisplayCommand()).append(" ");
             }
 
-            bot.sendGroupMsg(event.getGroupId(), sb.toString(), false);
+            oneBotService.send(bot, event.getGroupId(), sb.toString());
         }
 
         return BotPlugin.MESSAGE_IGNORE;

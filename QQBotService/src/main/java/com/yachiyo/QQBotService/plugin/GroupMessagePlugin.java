@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 // TODO: AI自行设置日程表
-// TODO: 用户信息表
 // TODO: 更多接口
 public class GroupMessagePlugin {
     @Autowired
@@ -29,7 +28,7 @@ public class GroupMessagePlugin {
     @GroupMessageHandler
     public int onNoAtGroupMessage(Bot bot, GroupMessageEvent event) {
         // 记录消息入库
-        groupMessageService.onSendMessage(groupMessageService.computeGroupMessage(bot, event));
+        groupMessageService.onSendMessage(bot, event);
         if (!event.getPlainText().matches("^\\s*/.*")) {
             // 以斜杠或空白加斜杠开头的消息是为指令，不尝试触发AI
             var result = groupAIChatService.onSendMessage(bot, event);
