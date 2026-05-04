@@ -3,16 +3,21 @@ package com.yachiyo.QQBotService.utils;
 import com.mikuac.shiro.dto.action.response.MsgResp;
 import com.mikuac.shiro.enums.MsgTypeEnum;
 import com.mikuac.shiro.model.ArrayMsg;
-import com.yachiyo.QQBotService.dto.UploadFileRequest;
+import com.yachiyo.QQBotService.dto.file.UploadFileRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 @Slf4j
 @Component
 public class CQCodeUtils {
+    @Autowired
+    private NapCatUtils napCatUtils;
+
     // 文件、视频、语音、图片（仅sub_type=0，即普通图片，排除了动画表情等其它类型）
     public final Predicate<ArrayMsg> SHOULD_SAVE = msg -> {
         if (typeEq(msg, MsgTypeEnum.image)) {
@@ -55,6 +60,23 @@ public class CQCodeUtils {
         return typeEq(msg, MsgTypeEnum.at) && msg.getLongData("qq") == userId;
     }
 
+    public boolean atEq(List<ArrayMsg> arrayMsgList, Long userId) {
+        return arrayMsgList.stream().anyMatch(msg -> atEq(msg, userId));
+    }
+
+    /**
+     * 从 CQ 码列表中查找回复的消息的id，若没有则返回 null
+     * @param arrayMsgList CQ 码列表
+     * @return 回复的消息的id或null
+     */
+    public Integer findReplyId(List<ArrayMsg> arrayMsgList) {
+        return arrayMsgList.stream()
+                .filter(msg -> typeEq(msg, MsgTypeEnum.reply))
+                .map(msg -> (int) msg.getLongData("id")) // 消息id就是int类型的
+                .findFirst()
+                .orElse(null);
+    }
+
     /**
      * 从 CQ 码列表中筛选出所有的 at CQ 码
      * @param arrayMsgList CQ 码列表
@@ -67,15 +89,27 @@ public class CQCodeUtils {
     }
 
     /**
-     * 从 CQ 码列表中筛选出所有 at CQ 码中的 QQ 号
+     * 从 CQ 码列表中筛选出所有 at CQ 码中的 QQ 号或 all
      * @param arrayMsgList CQ 码列表
-     * @return 包含所有 at CQ 码中 QQ 号的列表
+     * @return 包含所有 at CQ 码中 QQ 号或 all 的列表
      */
-    public List<Long> getAtIdList(List<ArrayMsg> arrayMsgList) {
+    public List<String> getAtIdList(List<ArrayMsg> arrayMsgList) {
         return arrayMsgList.stream()
                 .filter(msg -> typeEq(msg, MsgTypeEnum.at))
-                .map(msg -> msg.getLongData("qq"))
+                .map(msg -> msg.getStringData("qq"))
                 .toList();
+    }
+
+    /**
+     * 从 CQ 码列表中筛选出所有 at CQ 码中的 QQ 号，并将其添加到提供的 atList 中
+     * @param arrayMsgList CQ 码列表
+     * @param atList QQ 号的列表
+     */
+    public void computeAtList(List<ArrayMsg> arrayMsgList, List<String> atList) {
+        arrayMsgList.stream()
+                .filter(msg -> typeEq(msg, MsgTypeEnum.at))
+                .map(msg -> msg.getStringData("qq"))
+                .forEach(atList::add);
     }
 
     /**
@@ -115,43 +149,53 @@ public class CQCodeUtils {
     }
 
     /**
-     * 从 CQ 码中提取文件信息
-     * @param arrayMsg 包含文件信息的 CQ 码
-     * @return 包含文件 URL 和文件名的 UploadFileRequest 对象，如果 CQ 码类型不支持则返回 null
+     * 从 CQ 码中提取需要保存和上传的信息，若 CQ 码类型不符合要求或提取失败则返回 null
+     * @param arrayMsg 要提取信息的 CQ 码
+     * @return 包含文件名和 URL 的 UploadFileRequest 对象，或 null
      */
-    public UploadFileRequest getUploadFile(ArrayMsg arrayMsg) {
+    public UploadFileRequest getUploadFileRequest(ArrayMsg arrayMsg) {
         if (typeEq(arrayMsg, SHOULD_SAVE)) {
-            return findFileInfo(arrayMsg);
+            String url = findHttpOrLocalUrl(arrayMsg);
+            if (url == null) return null;
+            return new UploadFileRequest(arrayMsg.getStringData("file"), url);
         } else {
-            log.warn("不支持的CQ码类型：{}", arrayMsg.getRawType());
             return null;
         }
     }
 
     /**
-     * 从 CQ 码列表中筛选出所有包含文件信息的 CQ 码，并提取文件信息构造 UploadFileRequest 对象
+     * 筛选需要保存和上传的 CQ 码中的信息
      * @param arrayMsgList CQ 码列表
-     * @return 包含所有提取成功的 UploadFileRequest 对象的列表，如果没有符合条件的 CQ 码则返回空列表
+     * @return UploadFileRequest 列表，返回空列表而非 null
      */
-    public List<UploadFileRequest> getUploadFileList(List<ArrayMsg> arrayMsgList) {
+    public List<UploadFileRequest> getUploadFileRequestList(List<ArrayMsg> arrayMsgList) {
         return arrayMsgList.stream()
                 .filter(msg -> typeEq(msg, SHOULD_SAVE))
-                .map(this::findFileInfo)
+                .map(arrayMsg -> {
+                    String url = findHttpOrLocalUrl(arrayMsg);
+                    if (url == null) return null;
+                    return new UploadFileRequest(arrayMsg.getStringData("file"), url);
+                })
+                .filter(Objects::nonNull)
                 .toList();
     }
 
     /**
-     * 从 CQ 码中提取文件信息，构造 UploadFileRequest 对象
-     * @param arrayMsg 包含文件信息的 CQ 码
-     * @return 包含文件 URL 和文件名的 UploadFileRequest 对象，如果提取失败则返回 null
+     * 从 CQ 码中获取可下载的 URL，对于一般文件时使用file_id下载并获取localUrl，图片或视频等直接获取 httpUrl
+     * @param arrayMsg 要获取 URL 的 CQ 码
+     * @return localUrl或httpUrl，获取失败时返回 null
      */
-    private UploadFileRequest findFileInfo(ArrayMsg arrayMsg) {
+    public String findHttpOrLocalUrl(ArrayMsg arrayMsg) {
         try {
-            String url = arrayMsg.getStringData("url");
-            String fileName = arrayMsg.getStringData("file");
-            return new UploadFileRequest(url, fileName);
+            if (hasUrl(arrayMsg)) {
+                return arrayMsg.getStringData("url");
+            }
+            if (isFile(arrayMsg)) {
+                return napCatUtils.downloadFile(arrayMsg.getStringData("file_id"));
+            }
+            return null;
         } catch (Exception e) {
-            log.error("从CQ码中提取文件信息失败：{}", arrayMsg, e);
+            log.error("获取URL失败：{}", arrayMsg, e);
             return null;
         }
     }
@@ -175,13 +219,29 @@ public class CQCodeUtils {
         }
     }
 
+    public boolean hasUrl(ArrayMsg arrayMsg) {
+        return typeEq(arrayMsg, MsgTypeEnum.image, MsgTypeEnum.record, MsgTypeEnum.video);
+    }
+
+    public boolean isFile(ArrayMsg arrayMsg) {
+        return typeEq(arrayMsg, "file");
+    }
+
     /**
      * 判断 CQ 码是否是可下载的类型（文件、视频、语音、图片）
      * @param arrayMsg 要判断的 CQ 码
      * @return CQ 码是否是可下载的类型
      */
     public boolean isDownloadableType(ArrayMsg arrayMsg) {
-        if (typeEq(arrayMsg, MsgTypeEnum.record, MsgTypeEnum.video, MsgTypeEnum.image)) return true;
-        return typeEq(arrayMsg, "file");
+        return isFileLike(arrayMsg) || typeEq(arrayMsg, MsgTypeEnum.record);
+    }
+
+    /**
+     * 判断 CQ 码是否是文件类消息（包括图片、视频、文件）
+     * @param arrayMsg 要判断的 CQ 码
+     * @return CQ 码是否是文件类消息
+     */
+    public boolean isFileLike(ArrayMsg arrayMsg) {
+        return typeEq(arrayMsg, MsgTypeEnum.video, MsgTypeEnum.image) || typeEq(arrayMsg, "file");
     }
 }

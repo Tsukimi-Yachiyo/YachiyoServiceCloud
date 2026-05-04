@@ -1,6 +1,16 @@
 server:
   port: 8899
 
+bot:
+  yachiyo:
+    self-id: 1643066019 # 机器人QQ号
+
+shiro:
+  ws:
+    server: # 反向连接
+      enable: true
+      url: "/ws/shiro" # 默认值，用于 WebSocket 连接
+
 spring:
   application:
     name: qqbot-service
@@ -10,6 +20,15 @@ spring:
     username: ${postgresql.username}
     password: ${postgresql.password}
     driver-class-name: org.postgresql.Driver
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+
+  cache:
+    type: redis
 
   cloud:
     nacos:
