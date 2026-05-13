@@ -5,6 +5,8 @@ import com.mikuac.shiro.dto.event.message.MessageEvent;
 import com.mikuac.shiro.enums.MsgTypeEnum;
 import com.mikuac.shiro.model.ArrayMsg;
 import com.yachiyo.QQBotService.dto.FormattedMessage;
+import com.yachiyo.QQBotService.entity.GroupMessage;
+import com.yachiyo.QQBotService.service.FileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,20 +20,34 @@ import java.util.List;
  */
 @Slf4j
 @Component
-public class MessageUtils {
+public class FormatUtils {
+    @Autowired
+    private FileService fileService;
+
     @Autowired
     private CQCodeUtils CQCodeUtils;
 
+    public FormattedMessage format(GroupMessage groupMessage) {
+        FormattedMessage formattedMessage = new FormattedMessage();
+
+        formattedMessage.setAtList(groupMessage.getAtList());
+        formattedMessage.setFileNames(groupMessage.getFileNames());
+        formattedMessage.setPromptText(groupMessage.getPromptText());
+        formattedMessage.setRelevantUrls(groupMessage.getRelevantUrls());
+
+        return formattedMessage;
+    }
+
     public FormattedMessage format(MessageEvent event) {
         List<ArrayMsg> arrayMsgList = event.getArrayMsg();
-        String plainText = event.getPlainText();
-
         StringBuilder sb = new StringBuilder();
+
+        List<String> atList = new ArrayList<>();
         List<String> relevantUrls = new ArrayList<>();
         for (ArrayMsg arrayMsg : arrayMsgList) {
             switch (arrayMsg.getType()) {
                 case MsgTypeEnum.text -> sb.append(arrayMsg.getStringData("text"));
-                case MsgTypeEnum.at -> sb.append(formatAt(arrayMsg));
+                case MsgTypeEnum.at -> sb.append(formatAt(arrayMsg, atList));
                 case MsgTypeEnum.reply -> sb.append(formatReply(arrayMsg));
                 case MsgTypeEnum.forward -> sb.append(formatForward(arrayMsg));
                 case MsgTypeEnum.image -> sb.append(formatImage(arrayMsg));
@@ -41,20 +57,23 @@ public class MessageUtils {
                 case MsgTypeEnum.rps -> sb.append(formatRps(arrayMsg));
                 case MsgTypeEnum.face -> sb.append(formatFace(arrayMsg));
                 case MsgTypeEnum.json -> sb.append(formatJson(arrayMsg, relevantUrls));
+                default -> log.warn("未支持的CQ码类型，已跳过：{}", arrayMsg.getRawType());
             }
             if (CQCodeUtils.typeEq(arrayMsg, "file")) {
                 sb.append(formatFile(arrayMsg));
             }
             sb.append(" "); // 添加空格以分隔CQ码
         }
-        sb.append(plainText);
 
-        return new FormattedMessage(sb.toString().trim(), relevantUrls);
+        // 文件上传单独处理，这里传个null
+        return new FormattedMessage(sb.toString().trim(), atList, null, relevantUrls);
     }
 
-    public String formatAt(ArrayMsg arrayMsg) {
+    public String formatAt(ArrayMsg arrayMsg, List<String> atList) {
         if (!CQCodeUtils.typeEq(arrayMsg, MsgTypeEnum.at)) return "";
-        return "AT";
+        String atDetail = arrayMsg.getStringData("qq");
+        atList.add(atDetail);
+        return "AT:" + atDetail;
     }
 
     public String formatReply(ArrayMsg arrayMsg) {
@@ -132,7 +151,12 @@ public class MessageUtils {
      * @return 清理后的字符串，默认摘要或者空摘要会被删除
      */
     private String cleaningSummary(String summary) {
-        String ret = summary.replace("&#91;", "").replace("&#93;", "");
+        String ret = summary
+                .replace("&#91;", "")
+                .replace("&#93;", "")
+                .replace("[", "")
+                .replace("]", "")
+                ;
         if ("动画表情".equals(ret) || ret.isBlank()) {
             return "";
         } else {

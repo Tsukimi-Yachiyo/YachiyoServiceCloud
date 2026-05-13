@@ -1,15 +1,15 @@
 package com.yachiyo.QQBotService.service.impl;
 
 import com.yachiyo.QQBotService.client.FileClient;
-import com.yachiyo.QQBotService.dto.UploadFileRequest;
+import com.yachiyo.QQBotService.dto.file.UploadFileRequest;
 import com.yachiyo.QQBotService.result.Result;
 import com.yachiyo.QQBotService.service.FileService;
-import com.yachiyo.QQBotService.utils.ByteArrayMultipartFile;
-import kong.unirest.core.HttpResponse;
-import kong.unirest.core.Unirest;
+import com.yachiyo.QQBotService.support.ByteArrayMultipartFile;
+import com.yachiyo.QQBotService.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,39 +23,59 @@ public class FileServiceImpl implements FileService {
     @Autowired
     private FileClient fileClient;
 
-    @Override
-    public Result<String> uploadFile(UploadFileRequest request) {
-        try {
-            HttpResponse<byte[]> response = Unirest.get(request.getDownloadUrl()).asBytes();
-            int status = response.getStatus();
-            if (status < 200 || status >= 300) {
-                return Result.error("502", "下载文件失败", "status=" + status);
-            }
+    @Autowired
+    private FileUtils fileUtils;
 
-            byte[] body = response.getBody();
-            if (body == null || body.length == 0) {
+    @Override
+    public Result<String> uploadFile(String fileName, String anyUrl) {
+        try {
+            MultipartFile multipartFile = fileUtils.computeMultipartFile(fileName, anyUrl);
+            return this.uploadFile(multipartFile);
+        } catch (Exception e) {
+            return Result.error("500", "上传文件失败", e.getMessage());
+        }
+    }
+
+    @Override
+    public Result<String> uploadFile(MultipartFile multipartFile) {
+        try {
+            if (multipartFile == null || multipartFile.isEmpty()) {
                 return Result.error("500", "文件状态异常", "文件内容为空");
             }
 
-            String contentType = response.getHeaders().getFirst("Content-Type");
-            if (contentType == null || contentType.isBlank()) {
-                contentType = "application/octet-stream";
-            }
+            String minioFileName = computeFileName(multipartFile.getOriginalFilename());
 
-            String fileName = UUID.randomUUID() + findExtension(request.getFileName());
-            ByteArrayMultipartFile multipartFile = new ByteArrayMultipartFile(
-                    fileName, contentType, body
-            );
-
-            boolean uploaded = fileClient.upload(fileName, multipartFile);
+            boolean uploaded = fileClient.upload(minioFileName, multipartFile);
             if (uploaded) {
-                return Result.success(fileName);
+                return Result.success(minioFileName);
             } else {
-                return Result.error("500", "上传到FileService失败", fileName);
+                return Result.error("500", "上传文件失败", minioFileName);
             }
         } catch (Exception e) {
             return Result.error("500", "上传文件失败", e.getMessage());
         }
+    }
+
+    @Override
+    public Result<String> uploadFile(String fileName, byte[] content, String contentType) {
+        try {
+            if (content == null || content.length == 0) {
+                return Result.error("500", "文件状态异常", "文件内容为空");
+            }
+
+            MultipartFile multipartFile = new ByteArrayMultipartFile(
+                    fileName, contentType, content
+            );
+
+            return this.uploadFile(multipartFile);
+        } catch (Exception e) {
+            return Result.error("500", "上传文件失败", e.getMessage());
+        }
+    }
+
+    @Override
+    public Result<String> uploadFile(UploadFileRequest request) {
+        return this.uploadFile(request.getFileName(), request.getAnyUrl());
     }
 
     @Override
@@ -64,44 +84,11 @@ public class FileServiceImpl implements FileService {
             return Result.error("400", "上传列表不能为空", null);
         }
 
-        List<String> uploadedFileNames = new ArrayList<>();
-
         try {
-            for (int i = 0; i < requestList.size(); i++) {
-                UploadFileRequest request = requestList.get(i);
+            List<String> uploadedFileNames = new ArrayList<>();
 
-                HttpResponse<byte[]> response = Unirest.get(request.getDownloadUrl()).asBytes();
-                int status = response.getStatus();
-                if (status < 200 || status >= 300) {
-                    log.error("下载第{}个文件失败，状态码：{}", i, status);
-                    continue;
-                }
-
-                byte[] body = response.getBody();
-                if (body == null || body.length == 0) {
-                    log.error("第{}个文件内容为空", i);
-                    continue;
-                }
-
-                String contentType = response.getHeaders().getFirst("Content-Type");
-                if (contentType == null || contentType.isBlank()) {
-                    contentType = "application/octet-stream";
-                }
-
-                // UUID + 序号 + 扩展名
-                String fileName = UUID.randomUUID() + (i == 0 ? "" : "_" + i) + findExtension(request.getFileName());
-                ByteArrayMultipartFile multipartFile = new ByteArrayMultipartFile(
-                        fileName,
-                        contentType,
-                        response.getBody()
-                );
-
-                boolean uploaded = fileClient.upload(fileName, multipartFile);
-                if (uploaded) {
-                    uploadedFileNames.add(fileName);
-                } else {
-                    log.error("上传第{}个文件失败，文件名：{}", i, fileName);
-                }
+            for (var request : requestList) {
+                uploadedFileNames.add(this.uploadFile(request).getData());
             }
 
             return Result.success(uploadedFileNames);
@@ -153,6 +140,15 @@ public class FileServiceImpl implements FileService {
         } catch (Exception e) {
             return Result.error("500", "批量获取URL失败", e.getMessage());
         }
+    }
+
+    /**
+     * 根据原始文件名生成一个新的文件名，使用 UUID 作为基础，并保留原始文件的扩展名
+     * @param originalFileName 原始文件名
+     * @return 新的文件名，格式为 UUID + 原始扩展名
+     */
+    private String computeFileName(String originalFileName) {
+        return UUID.randomUUID() + findExtension(originalFileName);
     }
 
     /**

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS chat_groups (
 CREATE TABLE IF NOT EXISTS group_messages (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '自增主键',
     group_id BIGINT NOT NULL COMMENT '群号（外键关联 groups.group_id）',
-    message_id BIGINT NOT NULL COMMENT 'NapCat 消息ID',
+    message_id INT NOT NULL COMMENT 'NapCat 消息ID',
     sender_id BIGINT NOT NULL COMMENT '发送者QQ号',
     plain_text TEXT COMMENT '纯文本内容（不含CQ码）',
 
@@ -43,4 +43,11 @@ CREATE TABLE IF NOT EXISTS forward_messages (
     forward_id BIGINT PRIMARY KEY COMMENT '合并转发消息ID',
     message_list JSON NOT NULL COMMENT '包含的消息列表',
     has_child BOOLEAN DEFAULT FALSE COMMENT '是否包含嵌套的合并转发消息'
+);
+
+-- 抽签表
+CREATE TABLE IF NOT EXISTS fortunes (
+     qq BIGINT PRIMARY KEY COMMENT '抽签者QQ号',
+     date DATE DEFAULT (CURRENT_DATE) COMMENT '抽签日期',
+     result INT COMMENT '抽签结果'
 );

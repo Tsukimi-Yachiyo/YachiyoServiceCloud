@@ -1,4 +1,4 @@
-package com.yachiyo.QQBotService.utils;
+package com.yachiyo.QQBotService.support;
 
 import org.jspecify.annotations.NonNull;
 import org.springframework.web.multipart.MultipartFile;

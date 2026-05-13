@@ -4,7 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.dto.action.response.MsgResp;
 import com.mikuac.shiro.dto.event.message.GroupMessageEvent;
-import com.yachiyo.QQBotService.dto.UploadFileRequest;
+import com.mikuac.shiro.dto.event.message.MessageEvent;
+import com.mikuac.shiro.model.ArrayMsg;
+import com.yachiyo.QQBotService.dto.FormattedMessage;
+import com.yachiyo.QQBotService.dto.GroupMessageResp;
 import com.yachiyo.QQBotService.entity.ChatGroup;
 import com.yachiyo.QQBotService.entity.ForwardMessage;
 import com.yachiyo.QQBotService.entity.GroupMessage;
@@ -15,7 +18,7 @@ import com.yachiyo.QQBotService.result.Result;
 import com.yachiyo.QQBotService.service.FileService;
 import com.yachiyo.QQBotService.service.GroupMessageService;
 import com.yachiyo.QQBotService.utils.CQCodeUtils;
-import com.yachiyo.QQBotService.utils.MessageUtils;
+import com.yachiyo.QQBotService.utils.FormatUtils;
 import com.yachiyo.QQBotService.utils.UnixUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,13 +44,44 @@ public class GroupMessageServiceImpl implements GroupMessageService {
     private CQCodeUtils CQCodeUtils;
 
     @Autowired
-    private FileService fileService;
+    private FormatUtils formatUtils;
 
     @Autowired
-    private MessageUtils messageUtils;
+    private FileService fileService;
 
     @Override
-    public Result<Boolean> onSendMessage(GroupMessage groupMessage) {
+    public Result<Boolean> onSendMessage(Bot bot, MessageEvent messageEvent, long groupId, int messageId) {
+        GroupMessage groupMessage = computeGroupMessage(bot, messageEvent, groupId, messageId);
+
+        List<String> fileNames = new ArrayList<>();
+        try {
+            fileNames.addAll(fileService.uploadFiles(CQCodeUtils.getUploadFileRequestList(messageEvent.getArrayMsg())).getData()) ;
+        } catch (Exception e) {
+            return Result.error("文件上传失败: " + e.getMessage(), null);
+        } finally {
+            groupMessage.setFileNames(fileNames);
+        }
+
+        return saveMessage(groupMessage);
+    }
+
+    @Override
+    public Result<Boolean> onSendMessage(Bot bot, GroupMessageEvent event) {
+        GroupMessage groupMessage = computeGroupMessage(bot, event);
+
+        List<String> fileNames = new ArrayList<>();
+        try {
+            fileNames.addAll(fileService.uploadFiles(CQCodeUtils.getUploadFileRequestList(event.getArrayMsg())).getData()) ;
+        } catch (Exception e) {
+            return Result.error("文件上传失败: " + e.getMessage(), null);
+        } finally {
+            groupMessage.setFileNames(fileNames);
+        }
+
+        return saveMessage(groupMessage);
+    }
+
+    private Result<Boolean> saveMessage(GroupMessage groupMessage) {
         try {
             if (chatGroupMapper.selectById(groupMessage.getGroupId()) == null) {
                 ChatGroup chatGroup = new ChatGroup();
@@ -86,51 +120,147 @@ public class GroupMessageServiceImpl implements GroupMessageService {
         }
     }
 
-    @Override
-    public GroupMessage computeGroupMessage(Bot bot, GroupMessageEvent event) {
-        GroupMessage groupMessage = new GroupMessage();
+    private GroupMessage computeGroupMessage(Bot bot, GroupMessageEvent event) {
+        return computeGroupMessage(
+                bot, event.getGroupId(),
+                event.getTime(), event.getMessageId(),
+                event.getUserId(), event.getPlainText(),
+                event.getArrayMsg(),
+                formatUtils.format(event)
+        );
+    }
 
-        groupMessage.setGroupId(event.getGroupId());
-        groupMessage.setSendTime(unixUtils.ofSecond(event.getTime()));
-        groupMessage.setMessageId(Long.valueOf(event.getMessageId()));
-        groupMessage.setSenderId(event.getUserId());
-        groupMessage.setPlainText(event.getPlainText());
-
-        groupMessage.setBySelf(event.getUserId().equals(bot.getSelfId()));
-        groupMessage.setIsRecalled(false);
-
-        groupMessage.setAtList(CQCodeUtils.getAtIdList(event.getArrayMsg()));
-        groupMessage.setFileList(uploadFilesForName(event));
-
-        var formattedMessage = messageUtils.format(event);
-        groupMessage.setMessageForAgent(formattedMessage.getContent());
-        groupMessage.setRelevantUrls(formattedMessage.getRelevantUrls());
-
-        saveForwardMessage(bot, event);
-
-        return groupMessage;
+    private GroupMessage computeGroupMessage(Bot bot, MessageEvent messageEvent, long groupId, int messageId) {
+        return computeGroupMessage(
+                bot, groupId,
+                messageEvent.getTime(), messageId,
+                messageEvent.getUserId(), messageEvent.getPlainText(),
+                messageEvent.getArrayMsg(),
+                formatUtils.format(messageEvent)
+        );
     }
 
     /**
-     * 解析消息中的CQ码，下载其中包含的文件（如图片、语音、视频等），上传到MinIO，并返回新的文件名列表
-     * @param event 消息事件
-     * @return 上传后的文件名列表，若消息中不包含可下载的CQ码或上传失败则返回空列表
+     * 计算GroupMessage对象
+     * @param bot 机器人实例
+     * @param groupId 群号
+     * @param timeSeconds 消息发送时间，单位为秒
+     * @param messageId 消息ID
+     * @param senderId 发送者QQ号
+     * @param plainText 消息纯文本内容
+     * @param arrayMsgList 消息中的CQ码列表
+     * @param formattedMessage 格式化消息
+     * @return GroupMessage对象
      */
-    private List<String> uploadFilesForName(GroupMessageEvent event) {
-        // 1. 解析CQ码中的可下载内容（如图片、语音、视频等），获取它们的URL和文件名
-        List<UploadFileRequest> uploadFileList = CQCodeUtils.getUploadFileList(event.getArrayMsg());
-        // 2. 下载这些内容并上传到MinIO，获取其新的文件名
-        // 3. 将已保存的文件名列表保存到数据库
-        return fileService.uploadFiles(uploadFileList).getData();
+    private GroupMessage computeGroupMessage(
+            Bot bot, Long groupId,
+            Long timeSeconds, Integer messageId,
+            Long senderId, String plainText,
+            List<ArrayMsg> arrayMsgList,
+            FormattedMessage formattedMessage
+    ) {
+        GroupMessage groupMessage = new GroupMessage();
+
+        groupMessage.setGroupId(groupId);
+        groupMessage.setSendTime(unixUtils.ofSecond(timeSeconds));
+        groupMessage.setMessageId(messageId);
+        groupMessage.setSenderId(senderId);
+        groupMessage.setPlainText(plainText.trim());
+
+        groupMessage.setBySelf(senderId.equals(bot.getSelfId()));
+        groupMessage.setIsRecalled(false);
+
+        groupMessage.setAtList(formattedMessage.getAtList());
+        groupMessage.setFileNames(formattedMessage.getFileNames());
+        groupMessage.setPromptText(formattedMessage.getPromptText());
+        groupMessage.setRelevantUrls(formattedMessage.getRelevantUrls());
+
+        saveForwardMessage(bot, arrayMsgList, messageId);
+
+        return groupMessage;
+
+    }
+
+    @Override
+    public Result<GroupMessageResp> selectLastest(Long groupId) {
+        try {
+            QueryWrapper<GroupMessage> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("group_id", groupId)
+                    .orderByDesc("id")
+                    .last("LIMIT 1");
+            GroupMessage groupMessage = messageMapper.selectOne(queryWrapper);
+
+            if (groupMessage == null) {
+                return Result.error("404", "查询消息失败", "消息不存在");
+            }
+
+            return Result.success(new GroupMessageResp(
+                    groupMessage.getPlainText(),
+                    groupMessage.getSenderId(),
+                    formatUtils.format(groupMessage)
+            ));
+        } catch (Exception e) {
+            return Result.error("查询消息失败", e.getMessage());
+        }
+    }
+
+    @Override
+    public Result<List<GroupMessageResp>> selectMessage(Long groupId, Integer size) {
+        try {
+            QueryWrapper<GroupMessage> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("group_id", groupId)
+                    .orderByDesc("id")
+                    .last("LIMIT " + size);
+            List<GroupMessage> groupMessages = messageMapper.selectList(queryWrapper);
+
+            if (groupMessages.isEmpty()) {
+                // 没有消息时返回空列表而不是错误
+                return Result.success(new ArrayList<>());
+            }
+
+            List<GroupMessageResp> groupMessageRespList = new ArrayList<>();
+            for (GroupMessage groupMessage : groupMessages) {
+                groupMessageRespList.add(new GroupMessageResp(
+                        groupMessage.getPlainText(),
+                        groupMessage.getSenderId(),
+                        formatUtils.format(groupMessage)
+                ));
+            }
+            return Result.success(groupMessageRespList);
+        } catch (Exception e) {
+            return Result.error("查询消息失败", e.getMessage());
+        }
+    }
+
+    @Override
+    public Result<GroupMessageResp> selectGroupMessageResp(Integer messageId) {
+        try {
+            QueryWrapper<GroupMessage> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("message_id", messageId);
+            GroupMessage groupMessage = messageMapper.selectOne(queryWrapper);
+
+            if (groupMessage == null) {
+                return Result.error("404", "查询消息失败", "消息不存在");
+            }
+
+            return Result.success(new GroupMessageResp(
+                    groupMessage.getPlainText(),
+                    groupMessage.getSenderId(),
+                    formatUtils.format(groupMessage)
+            ));
+        } catch (Exception e) {
+            return Result.error("查询消息失败", e.getMessage());
+        }
     }
 
     /**
      * 如果消息中包含合并转发消息，则将其内容保存到数据库中，不支持嵌套的合并转发消息，因为ShiroSDK返回的DTO中无法查询到messageId
      * @param bot 用于调用API获取合并转发消息内容
-     * @param event 消息事件
+     * @param arrayMsgList CQ码列表
+     * @param messageId 消息ID
      */
-    private void saveForwardMessage(Bot bot, GroupMessageEvent event) {
-        long forwardId = CQCodeUtils.findForwardId(event.getArrayMsg());
+    private void saveForwardMessage(Bot bot, List<ArrayMsg> arrayMsgList, int messageId) {
+        long forwardId = CQCodeUtils.findForwardId(arrayMsgList);
         if (forwardId < 0) {
             return;
         }
@@ -145,7 +275,7 @@ public class GroupMessageServiceImpl implements GroupMessageService {
         boolean hasChild = false;
         List<String> messageList = new ArrayList<>();
 
-        var forwardMsgResp = bot.getForwardMsg(event.getMessageId());
+        var forwardMsgResp = bot.getForwardMsg(messageId);
         if (forwardMsgResp == null || forwardMsgResp.getData() == null) {
             return;
         }
@@ -153,7 +283,7 @@ public class GroupMessageServiceImpl implements GroupMessageService {
             if (CQCodeUtils.containsForward(msgResp)) {
                 hasChild = true;
             }
-            messageList.add(messageUtils.format(msgResp).getContent());
+            messageList.add(formatUtils.format(msgResp).getPromptText());
         }
 
         var forwardMessage = new ForwardMessage();
