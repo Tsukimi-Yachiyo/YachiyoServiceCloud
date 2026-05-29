@@ -11,7 +11,7 @@ import com.yachiyo.QQBotService.entity.GroupMessage;
 import com.yachiyo.QQBotService.mapper.ChatGroupMapper;
 import com.yachiyo.QQBotService.mapper.ForwardMessageMapper;
 import com.yachiyo.QQBotService.mapper.MessageMapper;
-import com.yachiyo.QQBotService.result.Result;
+import com.yachiyo.common.result.Result;
 import com.yachiyo.QQBotService.service.FileService;
 import com.yachiyo.QQBotService.service.GroupMessageService;
 import com.yachiyo.QQBotService.utils.CQCodeUtils;

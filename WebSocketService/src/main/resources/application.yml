@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: websocket-service
+  profiles:
+    include: secret
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848   # Nacos 注册中心地址
+        namespace: public                # 命名空间ID（非名称），用于环境隔离
+        username: nacos             # 必须正确！默认是 nacos
+        password: KaguyaIrohaForever           # 必须正确！默认是 nacos
+        group: DEFAULT_GROUP
+      config:
+        server-addr: 127.0.0.1:8848   # Nacos 配置中心地址
+        namespace: public
+        username: nacos             # 必须正确！默认是 nacos
+        password: KaguyaIrohaForever           # 必须正确！默认是 nacos
+        group: DEFAULT_GROUP
+        file-extension: yaml          # 配置文件格式
+        refresh-enabled: true         # 启用动态刷新
+  config:
+    import: nacos:${spring.application.name}
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/yachiyo?currentSchema=public&characterEncoding=utf8
+    username: ${postgresql.username}
+    password: ${postgresql.password}
+    driver-class-name: org.postgresql.Driver
+
+  # 核心：全面启用 Java 21+ 的虚拟线程，替代传统的平台线程池
+  threads:
+    virtual:
+      enabled: true
+  # 配置 Redis 连接
+  data:
+    redis:
+      host: localhost # 请替换为你的 Redis 地址
+      port: 6379
+      # password: your_password
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+server:
+  port: 8898

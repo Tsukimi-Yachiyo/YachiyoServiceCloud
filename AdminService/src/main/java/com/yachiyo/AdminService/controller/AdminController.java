@@ -4,9 +4,7 @@ import com.yachiyo.AdminService.client.ColumnClient;
 import com.yachiyo.AdminService.dto.*;
 import com.yachiyo.AdminService.result.Result;
 import com.yachiyo.AdminService.service.AdminService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,7 +12,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/yachiyo/168/mini/admin")
 @RequiredArgsConstructor
-@Validated
 public class AdminController {
 
     private final AdminService adminService;
@@ -35,17 +32,17 @@ public class AdminController {
     }
 
     @PostMapping("/review")
-    public Result<Boolean> reviewPosting(@RequestBody @Valid ReviewRequest request) {
+    public Result<Boolean> reviewPosting(@RequestBody ReviewRequest request) {
         return adminService.reviewPosting(request);
     }
 
     @PostMapping("/query-postings")
-    public Result<List<PostingResponse>> queryPostings(@RequestBody @Valid PostingQueryRequest request) {
+    public Result<List<PostingResponse>> queryPostings(@RequestBody PostingQueryRequest request) {
         return adminService.queryPostings(request);
     }
 
     @PostMapping("/add-column")
-    public Result<Boolean> addColumn(@RequestPart @Valid AddColumnRequest request) {
+    public Result<Boolean> addColumn(@RequestPart AddColumnRequest request) {
         return columnClient.addColumn(request);
     }
 

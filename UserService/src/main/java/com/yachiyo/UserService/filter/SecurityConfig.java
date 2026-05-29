@@ -24,8 +24,10 @@ public class SecurityConfig {
         http.addFilterBefore(gatewayHeaderAuthenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION);
 
         http.authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/api/v1/user/**").permitAll()
+                        .pathMatchers("/api/v2/user/**").permitAll()
                         .pathMatchers("/internal/**").permitAll()
+                        .pathMatchers("/api/v1/auth/**").permitAll()
+                        .pathMatchers("/api/v3/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)

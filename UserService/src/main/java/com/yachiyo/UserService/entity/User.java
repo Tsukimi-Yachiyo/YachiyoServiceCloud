@@ -8,6 +8,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Data @Table("users")
@@ -19,45 +20,53 @@ public class User {
      */
     @Id
     @Column("user_id")
-    Long id;
+    private Long id;
     
     /**
      * 用户名
      */
-    String name;
+    @Column("name")
+    private String name;
 
     /**
      * 密码
      */
-    String password;
+    @Column("password")
+    private String password;
 
     /**
      * 角色
      */
-    String role;
+    @Column("role")
+    private String role;
 
     /**
      * 邮箱
      */
-    String email;
+    @Column("email")
+    private String email;
 
     /**
      * 是否在线
      */
-    Boolean isOnline;
+    @Column("is_online")
+    private Boolean isOnline;
 
     /**
      * 是否禁用
      */
-    Boolean isLocked;
+    @Column("is_locked")
+    private Boolean isLocked;
     
     /**
      * 创建时间
      */
-    LocalDate  createTime;
+    @Column("create_time")
+    private LocalDateTime createTime;
 
     /**
      * 更新时间
      */
-    LocalDate updateTime;
+    @Column("update_time")
+    private LocalDateTime updateTime;
 }

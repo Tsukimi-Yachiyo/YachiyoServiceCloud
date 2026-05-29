@@ -1,7 +1,7 @@
 package com.yachiyo.UserService.utils;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +12,8 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+import static io.jsonwebtoken.Jwts.SIG.HS256;
 
 @Getter
 @Component
@@ -36,7 +38,7 @@ public class JwtUtils {
 
     /**
      * 生成JWT令牌
-     * @param userId 用户id
+     * @param userId 用户ID
      * @param name 用户名
      * @param uniqueCode 唯一标识
      * @return JWT令牌
@@ -47,111 +49,77 @@ public class JwtUtils {
         claims.put("name", name);
 
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(uniqueCode)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSignKey(), SignatureAlgorithm.HS256)
-                .signWith(getSignKey())
+                .claims(claims)                          // 新版 .claims() 代替 .setClaims()
+                .subject(uniqueCode)                     // .setSubject() -> .subject()
+                .issuedAt(new Date())                    // .setIssuedAt() -> .issuedAt()
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getSignKey(), HS256)
                 .compact();
     }
 
     /**
-     * 从JWT令牌中提取用户id
+     * 解析JWT令牌
      * @param token JWT令牌
-     * @return 用户id
+     * @return Claims
      */
-    public String getUserIdFromToken(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .get("userID").toString();
+    private Claims parseToken(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(getSignKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            return e.getClaims();
+        }
     }
 
     /**
-     * 从JWT令牌中提取手机号
+     * 从JWT令牌中提取用户ID
+     * @param token JWT令牌
+     * @return 用户ID
+     */
+    public String getUserIdFromToken(String token) {
+        return parseToken(token).get("userID").toString();
+    }
+
+    /**
+     * 从JWT令牌中提取用户名
      * @param token JWT令牌
      * @return 用户名
      */
     public String getNameFromToken(String token) {
-        return (String) Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .get("name");
+        return (String) parseToken(token).get("name");
     }
 
     /**
-     * 从JWT令牌中提取唯一标识
-     * @param token JWT令牌
-     * @return 唯一标识
-     */
-    public String getUniqueCodeFromToken(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
-    }
-
-    /**
-     * 从JWT令牌中提取Claims
-     * @param token JWT令牌
-     * @return Claims
-     */
-    public Map<String, Object> getClaimsFromToken(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-    }
-
-    /**
-     * 检查令牌是否有效
+     * 校验JWT令牌是否有效（防伪造、篡改）
      * @param token JWT令牌
      * @return 是否有效
      */
     public boolean isTokenValid(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            return false;
+        }
+
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(getSignKey())
+            Jwts.parser()
+                    .verifyWith(getSignKey())
                     .build()
-                    .parseClaimsJws(token);
+                    .parseSignedClaims(token);
+            return true;
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
             return true;
         } catch (Exception e) {
-            log.error("JWT令牌失效: {}", e.getMessage());
             return false;
         }
     }
 
     /**
-     * 检查JWT令牌是否过期
-     */
-    public boolean isTokenExpired(String token) {
-        Date expirationDate = Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getExpiration();
-        try {
-            return expirationDate.before(new Date());
-        } catch (Exception e) {
-            log.error("JWT令牌过期检查失败: {}", e.getMessage());
-            return true;
-        }
-    }
-
-    /**
-     * 更新JWT令牌
+     * 刷新JWT令牌
      * @param token JWT令牌
      * @param uniqueCode 唯一标识
-     * @return 更新后的JWT令牌
+     * @return 刷新后的JWT令牌
      */
     public String updateToken(String token, String uniqueCode) {
         String userId = getUserIdFromToken(token);

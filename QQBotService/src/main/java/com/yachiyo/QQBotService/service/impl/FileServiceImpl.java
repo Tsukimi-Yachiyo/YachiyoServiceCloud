@@ -2,7 +2,7 @@ package com.yachiyo.QQBotService.service.impl;
 
 import com.yachiyo.QQBotService.client.FileClient;
 import com.yachiyo.QQBotService.dto.UploadFileRequest;
-import com.yachiyo.QQBotService.result.Result;
+import com.yachiyo.common.result.Result;
 import com.yachiyo.QQBotService.service.FileService;
 import com.yachiyo.QQBotService.utils.ByteArrayMultipartFile;
 import kong.unirest.core.HttpResponse;

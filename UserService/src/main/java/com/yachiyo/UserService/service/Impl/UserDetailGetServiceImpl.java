@@ -11,12 +11,16 @@ import com.yachiyo.UserService.tool.FileClientTool;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -26,11 +30,14 @@ import java.util.function.Function;
 @Slf4j
 public class UserDetailGetServiceImpl implements UserDetailGetService {
 
+
     private final R2dbcEntityTemplate template;
 
     private final FileClient fileClient;
 
     private final FileClientTool fileClientTool;
+
+    private final ReactiveRedisTemplate<String, Object> redisTemplate;
 
     private static final String AVATAR_PATH_FORMAT = "%d/avatar.jpg";
 
@@ -57,12 +64,40 @@ public class UserDetailGetServiceImpl implements UserDetailGetService {
 
         return template.select(UserDetail.class)
                 .matching(Query.query(Criteria.where("userName").like("%" + userName + "%"))
-                     .limit(pageSize).offset(offset))
+                        .limit(pageSize).offset(offset))
                 .all()
-                .flatMap(userDetail -> getDetail(userDetail.getUserId(), currentUserId, UserDetailType.SEARCH));
+                .flatMap(userDetail -> getDetail(userDetail.getUserId(), currentUserId, UserDetailType.SEARCH)
+                        .doOnNext(result -> {
+                        // 假设 Result 类有一个 getData() 方法来获取内部的 UserDetailDTO
+                        if (result.getData() != null) {
+                            result.getData().setUserPhone(String.valueOf(userDetail.getUserId())); // 赋值 ID
+                        }
+                }));
     }
 
-    private Mono<UserDetailDTO> fillData(UserDetailDTO response, UserDetailType type, Long userId,Long selfID, Mono<UserDetail> userDetailCache) {
+    private Mono<UserDetailDTO> fillData(UserDetailDTO response, UserDetailType type, Long userId, Long selfID, Mono<UserDetail> userDetailCache) {
+        String cacheKey = "cache:user:detail:" + userId + ":" + type.name();
+
+        return redisTemplate.opsForValue().get(cacheKey)
+                .flatMap(cachedValue -> {
+                    applyValue(response, type, cachedValue);
+                    return Mono.just(response);
+                })
+                .switchIfEmpty(
+                        runOriginalLogic(response, type, userId, selfID, userDetailCache)
+                                .flatMap(res -> {
+                                    Object val = getValueFromDTO(res, type);
+                                    if (val != null) {
+                                        return redisTemplate.opsForValue()
+                                                .set(cacheKey, val, java.time.Duration.ofHours(1))
+                                                .thenReturn(res);
+                                    }
+                                    return Mono.just(res);
+                                })
+                );
+    }
+
+    private Mono<UserDetailDTO> runOriginalLogic(UserDetailDTO response, UserDetailType type, Long userId,Long selfID, Mono<UserDetail> userDetailCache) {
 
         return switch (type) {
 
@@ -149,5 +184,56 @@ public class UserDetailGetServiceImpl implements UserDetailGetService {
                 .doOnNext(setter)
                 .thenReturn(response)
                 .defaultIfEmpty(response);
+    }
+
+    /**
+     * 将缓存中的值应用到 DTO 中
+     *
+     * @param dto    要修改的 DTO
+     * @param type   要应用的 UserDetailType
+     * @param val    从缓存中获取的值
+     */
+    private void applyValue(UserDetailDTO dto, UserDetailType type, Object val) {
+        if (val == null) return;
+        switch (type) {
+            case AVATAR -> dto.setUserAvatar((String) val);
+            case NAME -> dto.setUserName((String) val);
+            case FOLLOWEE_COUNT -> dto.setFolloweeCount(((Number) val).longValue());
+            case FOLLOWER_COUNT -> dto.setFollowerCount(((Number) val).longValue());
+            case IS_FOLLOWED -> dto.setIsFollowed((Boolean) val);
+            case IS_FOLLOWING -> dto.setIsFollowing((Boolean) val);
+            case INTRODUCTION -> dto.setUserIntroduction((String) val);
+            case CITY -> dto.setUserCity((String) val);
+            case GENDER -> dto.setUserGender((String) val);
+            case BIRTHDAY -> dto.setUserBirthday(LocalDate.parse((String) val, DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+            case QQ -> dto.setUserQQ((String) val);
+            case PHONE -> dto.setUserPhone((String) val);
+            default -> throw new IllegalStateException("Unexpected value: " + type);
+        }
+    }
+
+    /**
+     * 从 DTO 中提取指定字段的值
+     *
+     * @param dto    要提取的 DTO
+     * @param type   要提取的 UserDetailType
+     * @return 从 DTO 中提取的值
+     */
+    private Object getValueFromDTO(UserDetailDTO dto, UserDetailType type) {
+        return switch (type) {
+            case AVATAR -> dto.getUserAvatar();
+            case NAME -> dto.getUserName();
+            case FOLLOWEE_COUNT -> dto.getFolloweeCount();
+            case FOLLOWER_COUNT -> dto.getFollowerCount();
+            case IS_FOLLOWED -> dto.getIsFollowed();
+            case IS_FOLLOWING -> dto.getIsFollowing();
+            case INTRODUCTION -> dto.getUserIntroduction();
+            case CITY -> dto.getUserCity();
+            case GENDER -> dto.getUserGender();
+            case BIRTHDAY -> dto.getUserBirthday();
+            case QQ -> dto.getUserQQ();
+            case PHONE -> dto.getUserPhone();
+            default -> throw new IllegalStateException("Unexpected value: " + type);
+        };
     }
 }

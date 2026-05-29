@@ -8,10 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -21,8 +18,7 @@ import java.util.List;
 @Validated
 public class CommentController {
 
-    @Autowired
-    private CommentService commentService;
+    private final CommentService commentService;
 
     /**
      * 添加评论
@@ -30,7 +26,7 @@ public class CommentController {
      * @param commentRequest 评论请求
      * @return 添加结果
      */
-    @PostMapping("/add-comment")
+    @PutMapping("/comment")
     public Result<Boolean> addComment(@RequestBody @Valid CommentRequest commentRequest) {
         return commentService.addComment(commentRequest);
     }
@@ -41,8 +37,8 @@ public class CommentController {
      * @param postingId 帖子ID
      * @return 评论列表
      */
-    @PostMapping("/get-comment-list")
-    public Result<List<CommentResponse>> getCommentList(@RequestBody Long postingId) {
+    @GetMapping("/comment")
+    public Result<List<CommentResponse>> getCommentList(@RequestParam Long postingId) {
         return commentService.getCommentList(postingId);
     }
 
@@ -52,8 +48,8 @@ public class CommentController {
      * @param commentId 评论ID
      * @return 删除结果
      */
-    @PostMapping("/delete-comment")
-    public Result<Boolean> deleteComment(@RequestBody Long commentId) {
+    @DeleteMapping("/comment")
+    public Result<Boolean> deleteComment(@RequestParam Long commentId) {
         return commentService.deleteComment(commentId);
     }
 }

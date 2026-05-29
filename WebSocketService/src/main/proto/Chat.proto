@@ -1,0 +1,10 @@
+syntax = "proto3";
+package com.kaguya.metaverse.protocol;
+option java_outer_classname = "ChatMessageProtos";
+
+message Chat {
+  int64 from_id = 1; // 发送者 ID
+  int64 to_id = 2; // 接收者 ID
+  int32 to_type = 3; // 接收者类型：0-单聊, 1-群聊
+  string message = 4;
+}

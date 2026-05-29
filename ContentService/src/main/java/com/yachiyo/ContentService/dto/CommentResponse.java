@@ -10,4 +10,6 @@ public class CommentResponse {
     private Long userId;
 
     private String content;
+
+    private Boolean isSelf;
 }

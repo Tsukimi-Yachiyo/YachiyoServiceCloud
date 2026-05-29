@@ -39,3 +39,8 @@ spring:
     endpoint: http://127.0.0.1:9000
     access-key: ${minio.accessKey}
     secret-key: ${minio.secretKey}
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB

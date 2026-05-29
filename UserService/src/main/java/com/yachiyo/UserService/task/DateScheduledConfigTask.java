@@ -18,7 +18,7 @@ import java.util.Date;
 public class DateScheduledConfigTask {
 
 
-    @Resource(name = "redisTemplate")
+    @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
     @Autowired

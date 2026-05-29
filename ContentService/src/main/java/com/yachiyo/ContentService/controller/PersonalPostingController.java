@@ -34,15 +34,15 @@ public class PersonalPostingController {
     /**
      * 删除帖子
      */
-    @PostMapping("/delete")
-    public Result<Boolean> deletePosting(@RequestParam Long postingId) {
+    @DeleteMapping("/{id}")
+    public Result<Boolean> deletePosting(@PathVariable("id") Long postingId) {
         return postingService.deletePosting(postingId);
     }
 
     /**
      * 获取自己的帖子
      */
-    @PostMapping("/getMyPosting")
+    @GetMapping("/my")
     public Result<List<SelfPostResponse>> getMyPosting() {
         return postingService.getMyPosting();
     }

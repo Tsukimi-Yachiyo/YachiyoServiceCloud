@@ -5,6 +5,8 @@ import lombok.Data;
 @Data
 public class PostEncapsulateResponse{
 
+    private Long postingId;
+
     private String title;
 
     private Long posterId;

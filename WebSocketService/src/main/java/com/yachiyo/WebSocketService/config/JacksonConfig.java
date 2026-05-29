@@ -1,4 +1,4 @@
-package com.yachiyo.UserService.config;
+package com.yachiyo.WebSocketService.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;

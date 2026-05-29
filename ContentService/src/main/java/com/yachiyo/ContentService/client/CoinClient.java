@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface CoinClient {
 
     @PostMapping("/change")
-    public Result<Boolean> changeCoin(
+    Result<Boolean> changeCoin(
             @RequestParam Long userId,
             @RequestBody @Valid CoinChangeRequest coinChangeRequest);
 

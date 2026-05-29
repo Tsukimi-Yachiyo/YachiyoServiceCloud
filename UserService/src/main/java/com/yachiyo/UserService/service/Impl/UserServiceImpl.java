@@ -6,6 +6,8 @@ import com.yachiyo.UserService.entity.UserDetail;
 import com.yachiyo.UserService.result.Result;
 import com.yachiyo.UserService.service.UserService;
 import com.yachiyo.UserService.tool.FileClientTool;
+import com.yachiyo.UserService.tool.ReactiveCacheEvict;
+import com.yachiyo.UserService.tool.ReactiveCacheable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -85,6 +87,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @ReactiveCacheEvict(cacheName = "user:detail", key = "#userId")
     public Mono<Result<Boolean>> updateUserDetail(Long userId, UserDetailDTO userDetailDTO) {
         return template.selectOne(Query.query(Criteria.where("id").is(userId)), UserDetail.class)
                 .flatMap(existUser -> {
@@ -110,6 +113,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @ReactiveCacheEvict(cacheName = "user:avatar", key = "#userId")
     public Mono<Result<Boolean>> updateUserAvatar(Long userId, FilePart userAvatar) {
         String filePath = String.format(AVATAR_PATH_FORMAT, userId);
         return filePartToMultipartFile(userAvatar)
@@ -122,6 +126,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @ReactiveCacheable(cacheName = "user:avatar", key = "#userId")
     public Mono<Result<String>> getUserAvatar(Long userId) {
         String filePath = String.format(AVATAR_PATH_FORMAT, userId);
         return fileClientTool.callFileClient(

@@ -7,10 +7,7 @@ import com.yachiyo.ContentService.result.Result;
 import com.yachiyo.ContentService.service.PostingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -26,15 +23,15 @@ public class GetPublicPostingController {
     /**
      * 获取帖子
      */
-    @PostMapping("/get")
-    public Result<GetPostingResponse> getPosting(@RequestParam Long postingId) {
+    @GetMapping("/{id}")
+    public Result<GetPostingResponse> getPosting(@PathVariable("id") Long postingId) {
         return postingService.getPosting(postingId);
     }
 
     /**
      * 获取帖子统计信息
      */
-    @PostMapping("/stats")
+    @GetMapping("/stats")
     public Result<PostStatsResponse> getPostingStats(@RequestParam Long postingId) {
         return postingService.getPostingStats(postingId);
     }
@@ -42,8 +39,8 @@ public class GetPublicPostingController {
     /**
      * 搜索帖子
      */
-    @PostMapping("/search")
-    public Result<List<Long>> searchPosting(@RequestParam String keyword, @RequestParam Integer pageNum, @RequestParam Integer pageSize) {
+    @GetMapping("/search")
+    public Result<List<PostEncapsulateResponse>> searchPosting(@RequestParam String keyword, @RequestParam Integer pageNum, @RequestParam Integer pageSize) {
         return postingService.searchPosting(keyword, pageNum, pageSize);
     }
 
@@ -69,7 +66,7 @@ public class GetPublicPostingController {
      * @param postingId 帖子id
      * @return 帖子简述
      */
-    @PostMapping("/encapsulate")
+    @GetMapping("/encapsulate")
     public Result<PostEncapsulateResponse> getPostingEncapsulate(@RequestParam Long postingId) {
         return postingService.getPostingEncapsulate(postingId);
     }
@@ -77,7 +74,7 @@ public class GetPublicPostingController {
     /**
      * 获取一个用户的帖子
      */
-    @PostMapping("/user")
+    @GetMapping("/user")
     public Result<List<Long>> getUserPosting(@RequestParam Long userId) {
         return postingService.getUserPosting(userId);
     }
