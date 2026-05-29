@@ -87,7 +87,7 @@ public class UserEntryTool {
                                 ReactiveHashOperations<String, String, Boolean> hashOps = reactiveRedisTemplate.opsForHash();
                                 return hashOps.put(redisMainKey, "birthday", result)
                                         .then(reactiveRedisTemplate.expire(redisMainKey,  Duration.ofHours(24)))
-                                        .then(Mono.just(result));
+                                        .then(Mono.just(true));
                             })
                             .defaultIfEmpty(false);
                 })

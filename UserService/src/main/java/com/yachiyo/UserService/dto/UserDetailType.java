@@ -25,7 +25,7 @@ public enum UserDetailType {
     /**
      * 关注详情类型：包含关注和被关注
      */
-    FOLLOW(IS_FOLLOWED,IS_FOLLOWING),
+    FOLLOW(FOLLOWER_COUNT, FOLLOWEE_COUNT,IS_FOLLOWED,IS_FOLLOWING),
 
     /**
      * 公共详情类型：包含用户的介绍、城市和性别

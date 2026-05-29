@@ -12,9 +12,15 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+import java.util.Objects;
+
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class GatewayHeaderAuthenticationWebFilter implements WebFilter {
+
+    private final List<String> whitePrefixes = List.of("/internal/", "/api/v1/auth/", "/api/v3/");
+    private final List<String> blackSuffixes = List.of("logout", "ws-token", "freeze");
 
     @Override @NullMarked
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -28,13 +34,23 @@ public class GatewayHeaderAuthenticationWebFilter implements WebFilter {
         String userId = headers.getFirst("X-User-Id");
 
         UsernamePasswordAuthenticationToken auth =
-                new UsernamePasswordAuthenticationToken(userId, null, null);
+                new UsernamePasswordAuthenticationToken(Objects.requireNonNull(userId), null, null);
 
         return chain.filter(exchange)
                 .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth));
     }
 
-    private boolean isWhiteListPath(String requestPath) {
-        return requestPath.startsWith("/internal/**");
+    private boolean isWhiteListPath(String path) {
+
+        for (String prefix : whitePrefixes) {
+            if (path.startsWith(prefix)) {
+                // 必须所有黑名单后缀都不匹配
+                boolean isBlack = blackSuffixes.stream().anyMatch(path::endsWith);
+                if (!isBlack) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

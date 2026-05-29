@@ -19,20 +19,19 @@ import java.util.List;
 @Validated
 public class ColumnController {
 
-    @Autowired
-    private ColumnService columnService;
+    private final ColumnService columnService;
 
-    @PostMapping("/search")
+    @GetMapping("/search")
     public Result<List<ColumnResponse>> searchColumn(@RequestBody SearchRequest searchRequest) {
         return columnService.searchColumn(searchRequest);
     }
 
-    @PostMapping("/interaction")
+    @PutMapping("/interaction")
     public Result<Boolean> interactionColumn(@RequestBody InteractionRequest interactionRequest) {
         return columnService.interactionColumn(interactionRequest);
     }
     
-    @GetMapping("/getInteraction")
+    @GetMapping("/interaction")
     public Result<InteractionResponse> getInteraction(@RequestParam Long columnId) {
         return columnService.getInteraction(columnId);
     }

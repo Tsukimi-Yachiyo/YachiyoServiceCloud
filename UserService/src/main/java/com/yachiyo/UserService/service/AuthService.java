@@ -61,4 +61,17 @@ public interface AuthService {
      * @return 是否冻结成功
      */
     Mono<Result<Boolean>> Freeze(Long userId);
+
+    /**
+     * 获取 Ws 连接令牌
+     * @return 连接令牌
+     */
+    Mono<Result<String>> GetWsToken(Long userId);
+
+    /**
+     * 解冻账户
+     * @param userId 用户ID
+     * @return 是否解冻成功
+     */
+    Mono<Result<Boolean>> Thaw(Long userId);
 }

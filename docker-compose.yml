@@ -62,9 +62,9 @@ services:
       - nacos
       - redis
 
-  posting-service:
-    image: 211.101.234.16:5000/posting-service:latest
-    container_name: posting-service
+  content-service:
+    image: 211.101.234.16:5000/content-service:latest
+    container_name: content-service
     restart: always
     network_mode: host
     depends_on:

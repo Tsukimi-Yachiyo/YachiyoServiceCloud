@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.*;
 public interface ColumnClient {
 
     @PostMapping("/add")
-    public Result<Boolean> addColumn(@RequestPart AddColumnRequest addColumnRequest) ;
+    Result<Boolean> addColumn(@RequestPart AddColumnRequest addColumnRequest) ;
 
     @DeleteMapping
-    public Result<Boolean> deleteColumn(@RequestPart Long id) ;
+    Result<Boolean> deleteColumn(@RequestPart Long id) ;
 }

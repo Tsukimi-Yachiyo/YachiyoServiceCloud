@@ -28,7 +28,8 @@ public class SecurityConfig {
                 .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v2/posting/**").hasAnyRole("USER")
-                        .requestMatchers("/internal/posting/**").permitAll()
+                        .requestMatchers("/api/v2/column/**").hasAnyRole("USER")
+                        .requestMatchers("/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)

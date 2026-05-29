@@ -12,6 +12,8 @@ import com.yachiyo.ContentService.mapper.ColumnMapper;
 import com.yachiyo.ContentService.result.Result;
 import com.yachiyo.ContentService.service.ColumnService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +33,10 @@ public class ColumnServiceImpl implements ColumnService {
     @Autowired
     private CoinClient coinClient;
 
+    private static final String COLUMN_CACHE_NAME = "cache:column";
+
     @Override
+    @Cacheable(value = COLUMN_CACHE_NAME, key = "#searchRequest.keyword + ':' + #searchRequest.pageNum + ':' + #searchRequest.pageSize")
     public Result<List<ColumnResponse>> searchColumn(SearchRequest searchRequest) {
         Page<Column> page = new Page<>(searchRequest.getPageNum(), searchRequest.getPageSize() );
         LambdaQueryWrapper<Column> queryWrapper = new LambdaQueryWrapper<>();
@@ -49,6 +54,7 @@ public class ColumnServiceImpl implements ColumnService {
     }
 
     @Override
+    @Cacheable(value = COLUMN_CACHE_NAME, key = "#columnId")
     public Result<InteractionResponse> getInteraction(Long columnId) {
 
         Column column = columnMapper.selectById(columnId);
@@ -60,6 +66,7 @@ public class ColumnServiceImpl implements ColumnService {
     }
 
     @Override
+    @CacheEvict(value = COLUMN_CACHE_NAME, key = "#interactionRequest.postingId")
     public Result<Boolean> interactionColumn(InteractionRequest interactionRequest) {
         Long userId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
         Column column = columnMapper.selectById(interactionRequest.getPostingId());

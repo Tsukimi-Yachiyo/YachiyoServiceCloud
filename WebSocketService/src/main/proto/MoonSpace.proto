@@ -1,0 +1,50 @@
+syntax = "proto3";
+package com.kaguya.metaverse.protocol;
+option java_outer_classname = "MoonMessageProtos";
+
+// 顶层封包：利用 opcode 进行消息路由分发
+message SpacePacket {
+  int32 opcode = 1; // 1: 移动, 2: 聊天, 3: 地块交互, 4: 玩家加入/离开, 5: 玩家位置, 100: 服务器帧同步广播
+  bytes payload = 2; // 具体的业务数据
+}
+
+// OpCode = 1: 玩家移动状态
+message PlayerTransform {
+  int64 user_id = 1;
+  float x = 2;
+  float y = 3;
+  int32 facing_dir = 4; // 0-7 对应前端 8 向帧动画
+  int64 timestamp = 5;  // 客户端时间戳，用于前端 LERP 插值与服务器校验
+}
+
+// OpCode = 2: 玩家聊天状态
+message PlayerChat {
+  int64 user_id = 1;
+  string message = 2;
+}
+
+// OpCode = 3: 地块交互状态
+message BlockInteraction {
+  int64 user_id = 1;
+  int32 block_id = 2;
+  int32 action = 3; // 0: 点击, 1: 拖拽
+}
+
+// OpCode = 4: 玩家加入/离开状态
+message PlayerJoinLeave {
+  int64 user_id = 1;
+  bool is_join = 2; // true: 加入, false: 离开
+}
+
+// OpCode = 5: 玩家位置状态
+message PlayerPosition {
+  int64 user_id = 1;
+  float x = 2;
+  float y = 3;
+}
+
+// OpCode = 100: 服务器帧同步广播 (Server Tick Broadcast)
+message RoomSyncFrame {
+  int64 server_tick = 1;
+  repeated PlayerPosition players = 2;
+}

@@ -1,0 +1,10 @@
+fastapi>=0.136.0
+uvicorn>=0.46.0
+python-dotenv>=1.2.2
+nacos-sdk-python==3.2.0b1
+apscheduler>=3.10.3
+a2a-sdk==0.3.22
+asyncpg>=0.30.0
+redis>=5.0.0
+httpx>=0.28.1
+pydantic>=2.11.3

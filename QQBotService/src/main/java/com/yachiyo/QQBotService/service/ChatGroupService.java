@@ -2,7 +2,7 @@ package com.yachiyo.QQBotService.service;
 
 import com.mikuac.shiro.dto.event.notice.GroupIncreaseNoticeEvent;
 import com.yachiyo.QQBotService.entity.ChatGroup;
-import com.yachiyo.QQBotService.result.Result;
+import com.yachiyo.common.result.Result;
 
 public interface ChatGroupService {
     Result<Boolean> onGroupJoin(ChatGroup chatGroup);

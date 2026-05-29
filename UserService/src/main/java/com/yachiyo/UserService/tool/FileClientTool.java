@@ -17,8 +17,8 @@ public class FileClientTool {
         return Mono.fromCallable(feignCall::get)
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(result -> {
-                    if (String.valueOf(HttpStatus.OK.value()).equals(result.getCode()) && result.getData() != null) {
-                        return Mono.just(result.getData());
+                    if (String.valueOf(HttpStatus.OK.value()).equals(result.getCode())) {
+                        return Mono.justOrEmpty(result.getData());
                     } else {
                         log.error("{}: code={}, message={}", errorMsg, result.getCode(), result.getMessage());
                         return Mono.error(new RuntimeException(errorMsg + ": " + result.getMessage()));

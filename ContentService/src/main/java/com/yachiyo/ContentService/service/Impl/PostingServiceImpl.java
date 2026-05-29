@@ -41,12 +41,12 @@ public class PostingServiceImpl implements PostingService {
     private final CacheManager cacheManager;
     private final CoinClient coinClient;
 
-    private static final String POSTING_SEARCH_CACHE_NAME = "public:posting:search";
-    private static final String POSTING_DETAIL_CACHE_NAME = "public:posting:detail";
-    private static final String POSTING_ENCAPSULATE_CACHE_NAME = "public:posting:encapsulate";
+    private static final String POSTING_SEARCH_CACHE_NAME = "cache:posting:search";
+    private static final String POSTING_DETAIL_CACHE_NAME = "cache:posting:detail";
+    private static final String POSTING_ENCAPSULATE_CACHE_NAME = "cache:posting:encapsulate";
 
-    @Override @Cacheable(value = POSTING_SEARCH_CACHE_NAME, key = "#keyword")
-    public Result<List<Long>> searchPosting(String keyword, Integer pageNum, Integer pageSize) {
+    @Override @Cacheable(value = POSTING_SEARCH_CACHE_NAME, key = "#keyword + ':' + #pageNum + ':' + #pageSize")
+    public Result<List<PostEncapsulateResponse>> searchPosting(String keyword, Integer pageNum, Integer pageSize) {
         Page<Posting> page = new Page<>(pageNum, pageSize);
 
         LambdaQueryWrapper<Posting> queryWrapper = new LambdaQueryWrapper<>();
@@ -61,18 +61,26 @@ public class PostingServiceImpl implements PostingService {
 
         postingMapper.selectPage(page, queryWrapper);
 
-        List<Long> postingIds = page.getRecords()
+        List<PostEncapsulateResponse> posting = page.getRecords()
                 .stream()
-                .map(Posting::getId)
+                .map(result ->{ PostEncapsulateResponse postEncapsulateResponse = getPostingEncapsulate(result.getId()).getData();
+                    postEncapsulateResponse.setPostingId(result.getId());
+                    return postEncapsulateResponse;
+                })
                 .collect(Collectors.toList());
-        return Result.success(postingIds);
+        return Result.success(posting);
     }
 
     @Override
     public Result<List<Long>> getLikePosting() {
         try {
             Long UserId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
-            return Result.success(linkLikeMapper.selectList(new LambdaQueryWrapper<LinkLike>().eq(LinkLike::getUserId, UserId)).stream().map(LinkLike::getPostingId).toList());
+            return Result.success(linkLikeMapper
+                    .selectList(new LambdaQueryWrapper<LinkLike>()
+                            .eq(LinkLike::getUserId, UserId))
+                    .stream()
+                    .map(LinkLike::getPostingId)
+                    .toList());
         } catch (Exception e) {
             return Result.error("500","获取点赞帖子失败：",e.getMessage());
         }
@@ -82,7 +90,11 @@ public class PostingServiceImpl implements PostingService {
     public Result<List<Long>> getCollectionPosting() {
         try {
             Long UserId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
-            return Result.success(linkCollectionMapper.selectList(new LambdaQueryWrapper<LinkCollection>().eq(LinkCollection::getUserId, UserId)).stream().map(LinkCollection::getPostingId).toList());
+            return Result.success(linkCollectionMapper
+                    .selectList(new LambdaQueryWrapper<LinkCollection>()
+                            .eq(LinkCollection::getUserId, UserId))
+                    .stream().map(LinkCollection::getPostingId)
+                    .toList());
         } catch (Exception e) {
             return Result.error("500","获取收藏帖子失败：",e.getMessage());
         }
@@ -166,7 +178,7 @@ public class PostingServiceImpl implements PostingService {
             PostEncapsulateResponse postEncapsulateResponse = new PostEncapsulateResponse();
             postEncapsulateResponse.setTitle(postingEntity.getTitle());
             postEncapsulateResponse.setPosterId(postingEntity.getUserId());
-            postEncapsulateResponse.setCoverImage(fileClient.getUrl(postingEntity.getUserId() + "/" + postingEntity.getTitle() + "/" + "cover.jpg", 60 * 5, "update"));
+            postEncapsulateResponse.setCoverImage(fileClient.getUrl(postingEntity.getUserId() + "/" + postingEntity.getTitle() + "/" + "cover.jpg", 60 * 5, "upload"));
             return Result.success(postEncapsulateResponse);
         } catch (Exception e) {
             return Result.error("500","获取帖子简述失败：",e.getMessage());
@@ -279,12 +291,7 @@ public class PostingServiceImpl implements PostingService {
     @Override
     public Result<PostStatsResponse> getPostingStats(Long postingId) {
         try {
-            Long userId = null;
-            try {
-                userId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
-            } catch (Exception e) {
-                // 用户未登录，userId保持为null
-            }
+            Long userId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
 
             PostDetail postDetail = postDetailMapper.selectById(postingId);
             if (postDetail == null) {
@@ -322,18 +329,16 @@ public class PostingServiceImpl implements PostingService {
     public Result<List<SelfPostResponse>> getMyPosting() {
         try {
             Long UserId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
-            List<Long> postingIds = postingMapper.selectList(new QueryWrapper<Posting>().eq("user_id", UserId).orderByDesc("id"))
-                    .stream()
-                    .map(Posting::getId)
-                    .toList();
-            List<SelfPostResponse> selfPostResponses = new ArrayList<>();
-            for (Long postingId : postingIds) {
-                SelfPostResponse selfPostResponse = new SelfPostResponse();
-                selfPostResponse.setPostingId(postingId);
-                selfPostResponse.setApproved(postingMapper.selectById(postingId).getIsApproved());
-                selfPostResponses.add(selfPostResponse);
-            }
-            return Result.success(selfPostResponses);
+            List<Posting> postings = postingMapper.selectList(new LambdaQueryWrapper<Posting>()
+                    .eq(Posting::getUserId, UserId)
+                    .orderByDesc(Posting::getId));
+            List<SelfPostResponse> responses = postings.stream().map(post -> {
+                SelfPostResponse res = new SelfPostResponse();
+                res.setPostingId(post.getId());
+                res.setApproved(post.getIsApproved());
+                return res;
+            }).collect(Collectors.toList());
+            return Result.success(responses);
         } catch (Exception e) {
             return Result.error("500","获取自己的帖子失败：",e.getMessage());
         }

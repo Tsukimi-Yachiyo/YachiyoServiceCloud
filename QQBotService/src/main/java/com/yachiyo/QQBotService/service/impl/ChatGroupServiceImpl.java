@@ -3,7 +3,7 @@ package com.yachiyo.QQBotService.service.impl;
 import com.mikuac.shiro.dto.event.notice.GroupIncreaseNoticeEvent;
 import com.yachiyo.QQBotService.entity.ChatGroup;
 import com.yachiyo.QQBotService.mapper.ChatGroupMapper;
-import com.yachiyo.QQBotService.result.Result;
+import com.yachiyo.common.result.Result;
 import com.yachiyo.QQBotService.service.ChatGroupService;
 import com.yachiyo.QQBotService.utils.UnixUtils;
 import org.springframework.beans.factory.annotation.Autowired;

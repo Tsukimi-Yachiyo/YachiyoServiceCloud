@@ -21,9 +21,9 @@ import org.springframework.data.relational.core.query.Update;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.time.Duration;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Random;
 
 @Service
 @AllArgsConstructor
@@ -52,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
                         return Mono.just(Result.<String>error("400.3", "用户已被禁用", null));
                     }
                     user.setIsOnline(true);
-                    user.setUpdateTime(LocalDate.now());
+                    user.setUpdateTime(LocalDateTime.now());
                     return template.update(user)
                             .flatMap(_ -> userEntrySystem(user))
                             .map(token -> Result.success(token, "登录成功", null));
@@ -155,7 +155,7 @@ public class AuthServiceImpl implements AuthService {
                                     return Mono.just(Result.<String>error("400.2", "用户已被锁定", null));
                                 }else{
                                     user.setIsOnline(true);
-                                    user.setUpdateTime(LocalDate.now());
+                                    user.setUpdateTime(LocalDateTime.now());
                                     return template.update(user)
                                             .flatMap(_ -> userEntrySystem(user))
                                             .map(token -> Result.success(token, "登录成功", null));
@@ -182,7 +182,7 @@ public class AuthServiceImpl implements AuthService {
                                 if (isOnline) {
                                     User user = new User();
                                     user.setId(userId);
-                                    user.setUpdateTime(LocalDate.now());
+                                    user.setUpdateTime(LocalDateTime.now());
                                     return template.update(user)
                                             .then(userEntrySystem(user))
                                             .map(newToken -> Result.success(newToken, "刷新令牌成功", null));
@@ -212,6 +212,29 @@ public class AuthServiceImpl implements AuthService {
         });
     }
 
+    @Override
+    public Mono<Result<String>> GetWsToken(Long userId) {
+        String token = String.valueOf(new Random().nextInt(Integer.MAX_VALUE));
+
+        return redisTemplate.opsForHash()
+                .put("user:" + userId, "ws_token", token)
+                .map(_ -> Result.success(token + "." + userId, "获取成功", null));
+    }
+
+    @Override
+    public Mono<Result<Boolean>> Thaw(Long userId) {
+        return template.update(
+                Query.query(Criteria.where("id").is(userId)),
+                Update.update("is_locked", false),
+                User.class).map(res -> {
+            if (res > 0) {
+                return Result.success(true, "解冻成功", null);
+            } else {
+                return Result.error("400", "用户不存在", null);
+            }
+        });
+    }
+
     private Mono<String> userEntrySystem(User user){
         Long userId = user.getId();
         return userEntryTool.login(userId)
@@ -220,7 +243,7 @@ public class AuthServiceImpl implements AuthService {
                         return safeTool.getUnique(userId)
                                 .map(unique -> jwtUtils.generateToken(userId, user.getName(), unique));
                     } else {
-                        return Mono.error(new IOException("用户详情不存在"));
+                        return Mono.just("");
                     }
                 });
     }
@@ -230,5 +253,4 @@ public class AuthServiceImpl implements AuthService {
                 .map(storedCode -> code != null && code.equals(storedCode))
                 .defaultIfEmpty(false);
     }
-
 }

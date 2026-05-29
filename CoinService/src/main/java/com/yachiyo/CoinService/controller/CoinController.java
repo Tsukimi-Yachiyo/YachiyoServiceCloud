@@ -20,7 +20,7 @@ public class CoinController {
      * @param coinChangeRequest 金币交易请求
      * @return 金币交易结果
      */
-    @PostMapping("/change")
+    @PutMapping
     public Result<Boolean> changeCoin(@RequestBody @Valid CoinChangeRequest coinChangeRequest) {
         return coinService.changeCoin(coinChangeRequest);
     }
@@ -29,7 +29,7 @@ public class CoinController {
      * 获取金币
      * @return 金币
      */
-    @PostMapping("/get")
+    @GetMapping
     public Result<Integer> getCoin() {
         return coinService.getCoin();
     }

@@ -1,7 +1,7 @@
 package com.yachiyo.QQBotService.service;
 
 import com.yachiyo.QQBotService.dto.UploadFileRequest;
-import com.yachiyo.QQBotService.result.Result;
+import com.yachiyo.common.result.Result;
 
 import java.util.List;
 

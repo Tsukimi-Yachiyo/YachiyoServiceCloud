@@ -20,8 +20,8 @@ import reactor.core.publisher.Mono;
 @Validated
 public class AuthController {
 
-    @Autowired
-    private AuthService authService;
+    private final AuthService authService;
+
     /**
      * 登录
      * @param loginRequest 登录请求
@@ -63,15 +63,6 @@ public class AuthController {
     }
 
     /**
-     * 退出登录
-     * @return 退出登录结果
-     */
-    @PostMapping("/logout")
-    public Mono<Result<Boolean>> Logout(@AuthenticationPrincipal @NonNull String userId) {
-        return authService.Logout(Long.parseLong(userId));
-    }
-
-    /**
      * 邮箱登录
      * @param mailLoginRequest 登录邮箱登录请求
      * @return 登录结果
@@ -91,6 +82,24 @@ public class AuthController {
     }
 
     /**
+     * 退出登录
+     * @return 退出登录结果
+     */
+    @PostMapping("/logout")
+    public Mono<Result<Boolean>> Logout(@AuthenticationPrincipal @NonNull String userId) {
+        return authService.Logout(Long.parseLong(userId));
+    }
+
+    /**
+     * 获取 Ws 连接令牌
+     * @return 连接令牌
+     */
+    @GetMapping("/ws-token")
+    public Mono<Result<String>> GetWsToken(@AuthenticationPrincipal @NonNull String userId) {
+        return authService.GetWsToken(Long.parseLong(userId));
+    }
+
+    /**
      * 冻结账户
      * @param userId 用户ID
      * @return 是否冻结成功
@@ -98,5 +107,15 @@ public class AuthController {
     @PostMapping("/freeze")
     public Mono<Result<Boolean>> Freeze(@AuthenticationPrincipal @NonNull String userId) {
         return authService.Freeze(Long.parseLong(userId));
+    }
+
+    /**
+     * 解冻账户
+     * @param userId 用户ID
+     * @return 是否解冻成功
+     */
+    @PostMapping("/thaw")
+    public Mono<Result<Boolean>> Thaw(@RequestParam String userId) {
+        return authService.Thaw(Long.parseLong(userId));
     }
 }

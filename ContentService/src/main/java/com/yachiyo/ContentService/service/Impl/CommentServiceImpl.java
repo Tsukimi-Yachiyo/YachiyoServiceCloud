@@ -28,7 +28,7 @@ public class CommentServiceImpl implements CommentService {
     @Autowired
     private CacheManager cacheManager;
 
-    private static final String COMMENT_CACHE_NAME = "public:posting:comment";
+    private static final String COMMENT_CACHE_NAME = "cache:posting:comment";
 
     @Override @CacheEvict(value = COMMENT_CACHE_NAME, key = "#commentRequest.postingId")
     public Result<Boolean> addComment(CommentRequest commentRequest) {
@@ -45,6 +45,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override @Cacheable(value = COMMENT_CACHE_NAME, key = "#postingId")
     public Result<List<CommentResponse>> getCommentList(Long postingId) {
+        Long UserId = (Long) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
         List<Comment> comments = commentMapper.selectList(new QueryWrapper<Comment>().eq("posting_id", postingId));
         List<CommentResponse> commentResponses = new ArrayList<>();
         for (Comment comment : comments) {
@@ -52,6 +53,7 @@ public class CommentServiceImpl implements CommentService {
             commentResponse.setId(comment.getId());
             commentResponse.setContent(comment.getContent());
             commentResponse.setUserId(comment.getUserId());
+            commentResponse.setIsSelf(comment.getUserId().equals(UserId));
             commentResponses.add(commentResponse);
         }
         return Result.success(new ArrayList<>(commentResponses.reversed()));

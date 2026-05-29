@@ -1,0 +1,1059 @@
+openapi: 3.0.0
+info:
+  title: Yachiyo Service Cloud API
+  description: |
+    YachiyoServiceCloud API 文档
+    
+    ## 认证说明
+    - 所有非白名单接口需要在 Header 中携带 `Authorization: Bearer <token>`
+    - Token 过期时间：1小时
+    - Token 需通过 `/api/v1/auth/login` 或 `/api/v1/auth/login-by-email` 接口获取
+    
+    ## 统一响应格式
+    ```json
+    {
+      "code": "200",
+      "message": "success", 
+      "data": {},
+      "detail": null
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: Yachiyo Team
+
+servers:
+  - url: http://localhost:8881
+    description: 本地网关服务
+
+tags:
+  - name: User Service
+    description: 用户服务
+  - name: Content Service
+    description: 内容服务
+  - name: Coin Service
+    description: 金币服务
+  - name: Admin Service
+    description: 管理服务
+  - name: File Service
+    description: 文件服务
+  - name: WebSocket
+    description: WebSocket 实时通信
+
+paths:
+
+  /api/v1/auth/login:
+    post:
+      tags: [User Service]
+      summary: 用户名密码登录
+      description: 使用用户名和密码进行登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultString'
+              example:
+                code: "200"
+                message: success
+                data: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                detail: null
+
+  /api/v1/auth/register:
+    post:
+      tags: [User Service]
+      summary: 用户注册
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultString'
+
+  /api/v1/auth/send-code:
+    post:
+      tags: [User Service]
+      summary: 发送验证码
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 邮箱地址
+      responses:
+        '200':
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/v1/auth/login-by-email:
+    post:
+      tags: [User Service]
+      summary: 邮箱验证码登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailLoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultString'
+
+  /api/v1/auth/change-password:
+    post:
+      tags: [User Service]
+      summary: 修改密码
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/v1/auth/refresh-token:
+    post:
+      tags: [User Service]
+      summary: 刷新 Token
+      parameters:
+        - name: refreshToken
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 刷新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultString'
+
+  /api/v1/auth/logout:
+    post:
+      tags: [User Service]
+      summary: 登出
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/v1/auth/ws-token:
+    get:
+      tags: [User Service]
+      summary: 获取 WebSocket Token
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultString'
+
+  /api/v1/auth/freeze:
+    post:
+      tags: [User Service]
+      summary: 冻结账户
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 操作成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/v2/user/detail/{detail_type}:
+    get:
+      tags: [User Service]
+      summary: 获取用户详情
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: detail_type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [SELF, BASIC, FULL]
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultUserDetailDTO'
+
+  /api/v2/user/search:
+    post:
+      tags: [User Service]
+      summary: 搜索用户
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userName
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: pageNum
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 搜索结果
+
+  /api/v2/user/followee:
+    get:
+      tags: [User Service]
+      summary: 获取关注列表
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+
+  /api/v2/user/follower:
+    get:
+      tags: [User Service]
+      summary: 获取粉丝列表
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+
+  /api/v2/user/follow:
+    post:
+      tags: [User Service]
+      summary: 关注用户
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: followeeId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/v2/user/avatar:
+    get:
+      tags: [User Service]
+      summary: 获取自己的头像
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultString'
+    put:
+      tags: [User Service]
+      summary: 更新头像
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/v2/user/detail:
+    put:
+      tags: [User Service]
+      summary: 更新用户详情
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDetailDTO'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/v2/posting/{id}:
+    get:
+      tags: [Content Service]
+      summary: 获取帖子详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultGetPostingResponse'
+
+  /api/v2/posting/stats:
+    get:
+      tags: [Content Service]
+      summary: 获取帖子统计信息
+      parameters:
+        - name: postingId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+
+  /api/v2/posting/search:
+    get:
+      tags: [Content Service]
+      summary: 搜索帖子
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: pageNum
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 搜索结果
+
+  /api/v2/posting/like:
+    post:
+      tags: [Content Service]
+      summary: 获取点赞的帖子
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+
+  /api/v2/posting/collection:
+    post:
+      tags: [Content Service]
+      summary: 获取收藏的帖子
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+
+  /api/v2/posting/encapsulate:
+    get:
+      tags: [Content Service]
+      summary: 获取帖子简述
+      parameters:
+        - name: postingId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+
+  /api/v2/posting/user:
+    get:
+      tags: [Content Service]
+      summary: 获取用户的帖子列表
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+
+  /api/v2/posting/interaction:
+    post:
+      tags: [Content Service]
+      summary: 帖子互动（点赞/收藏）
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InteractionRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/v2/posting/upload:
+    post:
+      tags: [Content Service]
+      summary: 上传帖子
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [title, content, type]
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+                type:
+                  type: string
+                coverImage:
+                  type: string
+                  format: binary
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/v2/posting/my:
+    get:
+      tags: [Content Service]
+      summary: 获取自己的帖子
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+
+  /api/v2/posting/comment:
+    get:
+      tags: [Content Service]
+      summary: 获取评论列表
+      parameters:
+        - name: postingId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+    put:
+      tags: [Content Service]
+      summary: 添加评论
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+    delete:
+      tags: [Content Service]
+      summary: 删除评论
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: commentId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/v2/column/search:
+    get:
+      tags: [Content Service]
+      summary: 搜索专栏
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: 成功
+
+  /api/v2/column/interaction:
+    get:
+      tags: [Content Service]
+      summary: 获取专栏互动状态
+      parameters:
+        - name: columnId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+    put:
+      tags: [Content Service]
+      summary: 专栏互动
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InteractionRequest'
+      responses:
+        '200':
+          description: 成功
+
+  /api/v2/coin:
+    get:
+      tags: [Coin Service]
+      summary: 获取金币数量
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultInteger'
+    put:
+      tags: [Coin Service]
+      summary: 金币交易
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoinChangeRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/v2/sign/check-in:
+    post:
+      tags: [Coin Service]
+      summary: 签到
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/v2/sign/status:
+    post:
+      tags: [Coin Service]
+      summary: 获取签到状态
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultBoolean'
+
+  /api/yachiyo/168/mini/admin/login:
+    post:
+      tags: [Admin Service]
+      summary: 管理员登录
+      parameters:
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: password
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+
+  /api/yachiyo/168/mini/admin/review:
+    post:
+      tags: [Admin Service]
+      summary: 审核帖子
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      responses:
+        '200':
+          description: 成功
+
+  /api/yachiyo/168/mini/admin/query-postings:
+    post:
+      tags: [Admin Service]
+      summary: 查询帖子
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostingQueryRequest'
+      responses:
+        '200':
+          description: 成功
+
+  /api/yachiyo/168/mini/admin/add-column:
+    post:
+      tags: [Admin Service]
+      summary: 添加专栏
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddColumnRequest'
+      responses:
+        '200':
+          description: 成功
+
+  /api/yachiyo/168/mini/admin/delete-column:
+    delete:
+      tags: [Admin Service]
+      summary: 删除专栏
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 成功
+
+  /file/public:
+    get:
+      tags: [File Service]
+      summary: 下载公开文件
+      parameters:
+        - name: fileName
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: bucket
+          in: query
+          schema:
+            type: string
+            default: public
+      responses:
+        '200':
+          description: 文件
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 格式：Bearer <token>
+
+  schemas:
+    Result:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+
+    ResultString:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: string
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+
+    ResultBoolean:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: boolean
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+
+    ResultInteger:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: integer
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+
+    ResultError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+      example:
+        code: "400"
+        message: "参数错误"
+        data: null
+        detail: null
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: 用户名
+        password:
+          type: string
+          description: 密码
+
+    RegisterRequest:
+      type: object
+      required:
+        - username
+        - password
+        - email
+        - code
+      properties:
+        username:
+          type: string
+          description: 用户名（含敏感词过滤）
+        password:
+          type: string
+          description: 密码
+        email:
+          type: string
+          description: 邮箱
+        code:
+          type: string
+          description: 验证码
+
+    MailLoginRequest:
+      type: object
+      required:
+        - email
+        - code
+      properties:
+        email:
+          type: string
+        code:
+          type: string
+
+    UserDetailDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        avatar:
+          type: string
+        nickname:
+          type: string
+        bio:
+          type: string
+
+    ResultUserDetailDTO:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/UserDetailDTO'
+        detail:
+          type: string
+          nullable: true
+
+    CommentRequest:
+      type: object
+      required:
+        - postingId
+        - content
+      properties:
+        postingId:
+          type: integer
+          format: int64
+        content:
+          type: string
+          description: 评论内容（含敏感词过滤）
+
+    InteractionRequest:
+      type: object
+      properties:
+        targetId:
+          type: integer
+          format: int64
+        type:
+          type: string
+          description: 互动类型
+        action:
+          type: string
+          description: 动作
+
+    GetPostingResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        content:
+          type: string
+        authorId:
+          type: integer
+          format: int64
+        createTime:
+          type: string
+          format: date-time
+        likeCount:
+          type: integer
+        commentCount:
+          type: integer
+
+    ResultGetPostingResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/GetPostingResponse'
+        detail:
+          type: string
+          nullable: true
+
+    SearchRequest:
+      type: object
+      properties:
+        keyword:
+          type: string
+        pageNum:
+          type: integer
+        pageSize:
+          type: integer
+
+    CoinChangeRequest:
+      type: object
+      properties:
+        amount:
+          type: integer
+        type:
+          type: string
+
+    ReviewRequest:
+      type: object
+      properties:
+        postingId:
+          type: integer
+          format: int64
+        action:
+          type: string
+          description: APPROVE 或 REJECT
+        reason:
+          type: string
+
+    PostingQueryRequest:
+      type: object
+      properties:
+        status:
+          type: string
+        pageNum:
+          type: integer
+        pageSize:
+          type: integer
+
+    AddColumnRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        coverImage:
+          type: string
+          format: binary
+
+  responses:
+    Unauthorized:
+      description: 未认证或 Token 无效
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: integer
+                example: 401
+              message:
+                type: string
+                example: 无效的令牌
